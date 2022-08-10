@@ -1,0 +1,42 @@
+{
+  "version": "2.0",
+  "app_name": "chalice-backend",
+  "stages": {
+
+    "dev": {
+      "environment_variables": {
+        "WEBMASTER_EMAIL" : "tranthanhbao2207@gmail.com",
+        "WEBMASTER_PASSWORD" : "123abc",
+        "APP_TABLE_NAME": "chalice-backend-AppTable815C50BC-149CVJD33OV2D",
+        "DYNAMODB_STREAM_ARN" : "arn:aws:dynamodb:ap-southeast-1:730353997858:table/chalice-backend-AppTable815C50BC-149CVJD33OV2D/stream/2022-08-09T11:28:02.315",
+        "POSTGRES_SERVER": "db.xggbesitxdlxuygrlmjk.supabase.co",
+        "POSTGRES_USER": "postgres",
+        "POSTGRES_PASSWORD": "baotran3318!",
+        "POSTGRES_DB": "baotran",
+        "SENTRY_DSN":"https://ff5f2f26c89a45508837c3bf8add6883@o1154740.ingest.sentry.io/6601392",
+        "SECRET_KEY": "random"
+      },
+      "api_gateway_stage": "dev",
+      "lambda_functions": {
+        "api_handler": {
+          "environment_variables": {
+            "DATABRICKS_WORKSPACE_URL" : "https://dbc-b2abde86-dfee.cloud.databricks.com/api/2.0/clusters/list",
+            "DATABRICKS_TOKEN": "dapi9c18ee5c8bbb3216245324316e39b0d1",
+            "DATABRICKS_JOB_API_VERSION": "2",
+            "SECRET_KEY": "random"
+          }
+        }
+      }
+    },
+    "prod": {
+      "api_gateway_stage": "api",
+      "lambda_functions": {
+        "api_handler": {
+          "environment_variables": {
+
+          }
+        }
+      }
+    }
+  }
+}

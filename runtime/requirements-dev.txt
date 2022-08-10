@@ -1,0 +1,7 @@
+mypy
+black
+isort
+autoflake
+flake8
+pytest
+alembic

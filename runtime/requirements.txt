@@ -1,0 +1,4 @@
+boto3<2.0.0
+sqlalchemy
+pydantic
+psycopg2-binary
