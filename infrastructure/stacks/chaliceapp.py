@@ -1,7 +1,13 @@
 import os
 
-from aws_cdk import aws_dynamodb as dynamodb
-
+from aws_cdk import (
+    aws_dynamodb as dynamodb,
+    aws_glue,
+    aws_s3,
+    aws_sns,
+    aws_sqs,
+    aws_cloudwatch as aws_cw,
+)
 try:
     from aws_cdk import core as cdk
 except ImportError:
@@ -13,19 +19,16 @@ from chalice.cdk import Chalice
 RUNTIME_SOURCE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), os.pardir, 'runtime')
 
+GLUE_JOBS_DIR =  os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), os.pardir, 'glue_jobs')
 
+PREFIX_NAME = 'ChaliceBackend'
+PREFIX_ID = 'ChaliceBackendID'
 class ChaliceApp(cdk.Stack):
 
     def __init__(self, scope, id, **kwargs):
         super().__init__(scope, id, **kwargs)
         self.dynamodb_table = self._create_ddb_table()
-
-        self.sns_instance = None
-
-        self.sqs_instance = None
-        self.s3_bucket = None
-
-
         self.chalice = Chalice(
             self, 'ChaliceApp', source_dir=RUNTIME_SOURCE_DIR,
             stage_config={
@@ -38,6 +41,13 @@ class ChaliceApp(cdk.Stack):
         self.dynamodb_table.grant_read_write_data(
             self.chalice.get_role('DefaultRole')
         )
+
+
+        self.sns_instance = None
+        self.sqs_instance = None
+        self.s3_bucket = None
+        self.glue_instance = None
+
 
     def _create_ddb_table(self):
         dynamodb_table = dynamodb.Table(
