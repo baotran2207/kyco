@@ -11,16 +11,17 @@ from awsglue.job import Job
 glueContext = GlueContext(SparkContext.getOrCreate())
 
 # catalog: database and table names
-db_name = "legislators"
+db_name = "ChaliceBackend_glue_db"
 tbl_persons = "persons_json"
 tbl_membership = "memberships_json"
 tbl_organization = "organizations_json"
 
 # output s3 and temp directories
-output_history_dir = "s3://glue-sample-target/output-dir/legislator_history"
-output_lg_single_dir = "s3://glue-sample-target/output-dir/legislator_single"
-output_lg_partitioned_dir = "s3://glue-sample-target/output-dir/legislator_part"
-redshift_temp_dir = "s3://glue-sample-target/temp-dir/"
+s3_bucket_name = "s3://chalicecackend-sameple-chalice-glue-sample-output/"
+output_history_dir = f"{s3_bucket_name}output-dir/legislator_history"
+output_lg_single_dir = f"{s3_bucket_name}output-dir/legislator_single"
+output_lg_partitioned_dir = f"{s3_bucket_name}output-dir/legislator_part"
+redshift_temp_dir = f"{s3_bucket_name}temp-dir/"
 
 # Create dynamic frames from the source tables
 persons = glueContext.create_dynamic_frame.from_catalog(database=db_name, table_name=tbl_persons)
