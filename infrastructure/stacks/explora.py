@@ -43,35 +43,9 @@ GLUE_SERVICE_URL = "glue.amazonaws.com"
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, **kwargs):
         super().__init__(scope, id, **kwargs)
-        self.dynamodb_table = self._create_ddb_table()
-        self.chalice = Chalice(
-            self,
-            "ChaliceApp",
-            source_dir=RUNTIME_SOURCE_DIR,
-            stage_config={
-                "environment_variables": {
-                    "APP_TABLE_NAME": self.dynamodb_table.table_name,
-                    "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
-                }
-            },
-        )
-        self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
+        # self.dynamodb_table = self._create_ddb_table()
 
         self._create_glue_sameple_stack()
-
-    def _create_ddb_table(self):
-        dynamodb_table = dynamodb.Table(
-            self,
-            "AppTable",
-            partition_key=dynamodb.Attribute(
-                name="PK", type=dynamodb.AttributeType.STRING
-            ),
-            sort_key=dynamodb.Attribute(name="SK", type=dynamodb.AttributeType.STRING),
-            stream=dynamodb.StreamViewType.NEW_IMAGE,
-            removal_policy=cdk.RemovalPolicy.DESTROY,
-        )
-        cdk.CfnOutput(self, "AppTableName", value=dynamodb_table.table_name)
-        return dynamodb_table
 
     def _create_glue_sameple_stack(self):
         self.s3_public_source = aws_s3.Bucket.from_bucket_name(
