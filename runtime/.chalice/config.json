@@ -7,7 +7,7 @@
       "environment_variables": {
         "WEBMASTER_EMAIL" : "tranthanhbao2207@gmail.com",
         "WEBMASTER_PASSWORD" : "123abc",
-        "APP_TABLE_NAME": "chalice-backend-AppTable815C50BC-149CVJD33OV2D",
+        "APP_TABLE_NAME": "chalice-backend-AppTable815C50BC-1DFJ2KK4YI2I1",
         "DYNAMODB_STREAM_ARN" : "arn:aws:dynamodb:ap-southeast-1:730353997858:table/chalice-backend-AppTable815C50BC-149CVJD33OV2D/stream/2022-08-09T11:28:02.315",
         "POSTGRES_SERVER": "db.xggbesitxdlxuygrlmjk.supabase.co",
         "POSTGRES_USER": "postgres",
