@@ -6,6 +6,6 @@ except ImportError:
 from stacks.chaliceapp import ChaliceApp
 
 app = cdk.App()
-ChaliceApp(app, 'chalice-backend')
+ChaliceApp(app, 'BaoTran-Backend')
 
 app.synth()
