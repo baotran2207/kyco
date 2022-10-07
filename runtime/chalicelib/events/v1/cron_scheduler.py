@@ -13,4 +13,4 @@ def warm_up_db_everyday(event):
     print(event.to_dict())
     db = SessionLocal()
     a = db.execute("SELECT 1")
-    print(a)
+    return "This should be invoked every weekday at 6pm"
