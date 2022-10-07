@@ -3,7 +3,7 @@ from chalice import Blueprint, Chalice
 
 from chalicelib.api.v1.auth import auth_routes
 from chalicelib.api.v1.users import users_blueprints
-
+from chalicelib.events.v1.cron_scheduler import cron_bp
 
 # from chalicelib.events.v1.cloudwatch_events import cw_bp
 # from chalicelib.events.v1.dynamodb_events import dynamodb_bp
@@ -24,6 +24,6 @@ def init_blueprint(app: Chalice):
     # app.register_blueprint(dynamodb_bp)
     # app.register_blueprint(cw_bp)
     # app.register_blueprint(s3_bp)
-
+    app.register_blueprint(cron_bp)
     return app
 

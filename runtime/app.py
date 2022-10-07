@@ -25,12 +25,13 @@ def health():
     return "ok"
 
 
-@app.route('/fetch')
-def fetch_data():
+@app.route('/check_db_connection')
+def check_db_connection():
     from chalicelib.db.session import SessionLocal
     db = SessionLocal()
-    a = db.execute("SELECT 1")
-    return {'result': "aa"}
+    query = db.execute("SELECT 1")
+    logger.info(f" Connection ok ! Detail {query} ")
+    return 'Connection is ok'
 
 init_blueprint(app)
 init_middlewares(app)
