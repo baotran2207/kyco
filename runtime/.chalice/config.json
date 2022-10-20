@@ -2,19 +2,10 @@
   "version": "2.0",
   "app_name": "chalice-backend",
   "stages": {
-
     "dev": {
       "environment_variables": {
-        "WEBMASTER_EMAIL" : "tranthanhbao2207@gmail.com",
-        "WEBMASTER_PASSWORD" : "123abc",
-        "APP_TABLE_NAME": "chalice-backend-AppTable815C50BC-1DFJ2KK4YI2I1",
-        "DYNAMODB_STREAM_ARN" : "arn:aws:dynamodb:ap-southeast-1:730353997858:table/chalice-backend-AppTable815C50BC-149CVJD33OV2D/stream/2022-08-09T11:28:02.315",
-        "POSTGRES_SERVER": "db.xggbesitxdlxuygrlmjk.supabase.co",
-        "POSTGRES_USER": "postgres",
-        "POSTGRES_PASSWORD": "baotran3318!",
-        "POSTGRES_DB": "baotran",
-        "SENTRY_DSN":"https://ff5f2f26c89a45508837c3bf8add6883@o1154740.ingest.sentry.io/6601392",
-        "SECRET_KEY": "random"
+        "SSM_NAME": "/chalice_backend/prod",
+        "ENV" : "dev"
       },
       "api_gateway_stage": "dev",
       "lambda_functions": {

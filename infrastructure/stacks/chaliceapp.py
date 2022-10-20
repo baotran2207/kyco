@@ -1,6 +1,6 @@
 import os
 from unicodedata import name
-
+import json
 from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_s3,
@@ -22,16 +22,28 @@ RUNTIME_SOURCE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), os.pardir, "runtime"
 )
 
+
+
 CURDIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
 
+SECREC_FILE_PATH = os.path.join(
+    CURDIR,"assets", "ssm_parameter_store", "prod.json"
+)
 
 PREFIX_NAME = "chalicecackend"
 PREFIX_ID = "chalicecackend-id"
 
-# S3_BUCKET_NAME = "sameple-chalice-glue-sample-output"
-# DYNAMODB_STREAM_ARN = "arn:aws:dynamodb:ap-southeast-1:730353997858:table/chalice-backend-AppTable815C50BC-149CVJD33OV2D/stream/2022-08-09T11:28:02.315"
+
+def get_config_secret(SECREC_FILE_PATH):
+    f = open(SECREC_FILE_PATH)
 
 
+    ssm_config = json.load(f)
+    print(ssm_config)
+    return ssm_config
+
+get_config_secret(SECREC_FILE_PATH)
+import aws_cdk.aws_ssm as ssm
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, **kwargs):
         super().__init__(scope, id, **kwargs)
@@ -43,10 +55,8 @@ class ChaliceApp(cdk.Stack):
             stage_config={
                 "environment_variables": {
                     "APP_TABLE_NAME": self.dynamodb_table.table_name,
-                    "POSTGRES_SERVER": "db.xggbesitxdlxuygrlmjk.supabase.co",
-                    "POSTGRES_USER": "postgres",
-                    "POSTGRES_PASSWORD": "baotran3318!",
-                    "POSTGRES_DB": "baotran",
+                    "ENV": "prod",
+                    "SSM_NAME": "/chalice_backend/prod",
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
             },
@@ -66,3 +76,12 @@ class ChaliceApp(cdk.Stack):
         )
         cdk.CfnOutput(self, "AppTableName", value=dynamodb_table.table_name)
         return dynamodb_table
+
+    def _create_ssm(self):
+        ssm.StringParameter(self, "Parameter",
+            allowed_pattern=".*",
+            description="The value Foo",
+            parameter_name="FooParameter",
+            string_value="Foo",
+            tier=ssm.ParameterTier.ADVANCED
+        )
