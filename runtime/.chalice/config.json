@@ -11,9 +11,6 @@
       "lambda_functions": {
         "api_handler": {
           "environment_variables": {
-            "DATABRICKS_WORKSPACE_URL" : "https://dbc-b2abde86-dfee.cloud.databricks.com/api/2.0/clusters/list",
-            "DATABRICKS_TOKEN": "dapi9c18ee5c8bbb3216245324316e39b0d1",
-            "DATABRICKS_JOB_API_VERSION": "2",
             "SECRET_KEY": "random"
           }
         }
