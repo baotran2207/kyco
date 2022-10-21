@@ -3,3 +3,4 @@ sqlalchemy<1.4
 # greenlet<1.1.0
 pydantic
 psycopg2-binary
+PyJWT

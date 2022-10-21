@@ -129,6 +129,6 @@ dmypy.json
 .pyre/
 
 
-
+infrastructure/assets/ssm_parameter_store/
 infrastructure/chalice.out/
 infrastructure/cdk.out/

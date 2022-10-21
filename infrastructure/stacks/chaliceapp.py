@@ -1,6 +1,6 @@
 import os
 from unicodedata import name
-
+import json
 from aws_cdk import (
     aws_dynamodb as dynamodb,
     aws_s3,
@@ -22,20 +22,33 @@ RUNTIME_SOURCE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), os.pardir, "runtime"
 )
 
+
+
 CURDIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
 
+SECRET_FILE_PATH = os.path.join(
+    CURDIR,"assets", "ssm_parameter_store", "prod.json"
+)
 
-PREFIX_NAME = "chalicecackend"
-PREFIX_ID = "chalicecackend-id"
+PREFIX_NAME = "BaoTranChalice" # Example: DataLakeCdkBlog
+PREFIX_ID = "baotran-chalice-id" # Example: unique-identifier-data-lake
 
-# S3_BUCKET_NAME = "sameple-chalice-glue-sample-output"
-# DYNAMODB_STREAM_ARN = "arn:aws:dynamodb:ap-southeast-1:730353997858:table/chalice-backend-AppTable815C50BC-149CVJD33OV2D/stream/2022-08-09T11:28:02.315"
+PRE_CREATED_PARAMETER_STORE_NAME = "/chalice_backend/prod"
 
+def get_config_secret(file_path: os.path) -> dict:
+    f = open(file_path)
+    ssm_config = json.load(f)
+    return ssm_config
 
+ssm_config = get_config_secret(SECRET_FILE_PATH)
+
+import aws_cdk.aws_ssm as ssm
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, **kwargs):
         super().__init__(scope, id, **kwargs)
         self.dynamodb_table = self._create_ddb_table()
+        self.parameter_store_config = self._create_ssm()
+
         self.chalice = Chalice(
             self,
             "BaoTranBackend",
@@ -43,20 +56,20 @@ class ChaliceApp(cdk.Stack):
             stage_config={
                 "environment_variables": {
                     "APP_TABLE_NAME": self.dynamodb_table.table_name,
-                    "POSTGRES_SERVER": "db.xggbesitxdlxuygrlmjk.supabase.co",
-                    "POSTGRES_USER": "postgres",
-                    "POSTGRES_PASSWORD": "baotran3318!",
-                    "POSTGRES_DB": "baotran",
+                    "ENV": "prod",
+                    "SSM_NAME": PRE_CREATED_PARAMETER_STORE_NAME
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
             },
         )
         self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
+        self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
+
 
     def _create_ddb_table(self):
         dynamodb_table = dynamodb.Table(
             self,
-            "AppTable",
+            f"{PREFIX_ID}-table",
             partition_key=dynamodb.Attribute(
                 name="PK", type=dynamodb.AttributeType.STRING
             ),
@@ -66,3 +79,7 @@ class ChaliceApp(cdk.Stack):
         )
         cdk.CfnOutput(self, "AppTableName", value=dynamodb_table.table_name)
         return dynamodb_table
+
+    def _create_ssm(self):
+        ps_object = ssm.StringParameter.from_string_parameter_name(self, f"{PREFIX_ID}-precreated", string_parameter_name=PRE_CREATED_PARAMETER_STORE_NAME)
+        return ps_object

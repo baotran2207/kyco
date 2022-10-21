@@ -1,19 +1,29 @@
 from pydantic import BaseSettings,  validator, SecretStr, HttpUrl, PostgresDsn
 from typing import Optional, Any, Dict
 import os
+import boto3
+import json
+ssm_name = os.getenv('SSM_NAME')
 
 
+def get_ssm_object(name) -> dict:
+    ssm_client = boto3.client('ssm')
+    parameter = ssm_client.get_parameter(Name=name)
+    return json.loads(parameter['Parameter']['Value'])
+
+env_vars = get_ssm_object(ssm_name)
 class AppSettings(BaseSettings):
+    ENV:str = env_vars.get("ENV")
 
     # Init User
-    WEBMASTER_EMAIL: str = os.getenv("WEBMASTER_EMAIL")
-    WEBMASTER_PASSWORD: str = os.getenv("WEBMASTER_PASSWORD")
+    WEBMASTER_EMAIL: str = env_vars.get("WEBMASTER_EMAIL")
+    WEBMASTER_PASSWORD: str = env_vars.get("WEBMASTER_PASSWORD")
 
     # DB
-    POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER")
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB")
+    POSTGRES_SERVER: str = env_vars.get("POSTGRES_SERVER")
+    POSTGRES_USER: str = env_vars.get("POSTGRES_USER")
+    POSTGRES_PASSWORD: str = env_vars.get("POSTGRES_PASSWORD")
+    POSTGRES_DB: str = env_vars.get("POSTGRES_DB")
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
@@ -33,11 +43,11 @@ class AppSettings(BaseSettings):
         )
 
     # Security
-    secret_key: SecretStr = os.getenv("SecretStr")
+    secret_key: SecretStr = env_vars.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
 
     # sentry
-    SENTRY_DSN: Optional[HttpUrl] = os.getenv("SENTRY_DSN")
+    SENTRY_DSN: Optional[HttpUrl] = env_vars.get("SENTRY_DSN")
 
     @validator("SENTRY_DSN", pre=True)
     def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
@@ -47,9 +57,9 @@ class AppSettings(BaseSettings):
         return v
 
     # databrick
-    DATABRICKS_WORKSPACE_URL: HttpUrl = os.getenv("DATABRICKS_WORKSPACE_URL")
-    DATABRICKS_TOKEN: str = os.getenv("DATABRICKS_TOKEN")
-    DATABRICKS_JOB_API_VERSION: str = os.getenv("DATABRICKS_JOB_API_VERSION")
+    # DATABRICKS_WORKSPACE_URL: HttpUrl = env_vars.get("DATABRICKS_WORKSPACE_URL")
+    # DATABRICKS_TOKEN: str = env_vars.get("DATABRICKS_TOKEN")
+    # DATABRICKS_JOB_API_VERSION: str = env_vars.get("DATABRICKS_JOB_API_VERSION")
 
 
     # Dynamo
