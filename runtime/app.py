@@ -19,6 +19,10 @@ localhost:8000/dev/v1/users/baotran
 localhost:8000/api/v1/users/baotran
 """
 
+@app.route('/')
+def health():
+    return "Hello there from tranthanhbao2207@gmail.com"
+
 
 @app.route('/health')
 def health():
@@ -38,8 +42,8 @@ init_middlewares(app)
 
 
 
-@app.authorizer()
-def jwt_auth(auth_request):
-    token = auth_request.token
-    decoded = decode_jwt_token(token)
-    return AuthResponse(routes=["*"], principal_id=decoded["username"])
+# @app.authorizer()
+# def jwt_auth(auth_request):
+#     token = auth_request.token
+#     decoded = decode_jwt_token(token)
+#     return AuthResponse(routes=["*"], principal_id=decoded["username"])

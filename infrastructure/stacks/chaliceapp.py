@@ -26,28 +26,29 @@ RUNTIME_SOURCE_DIR = os.path.join(
 
 CURDIR = os.path.join(os.path.dirname(os.path.dirname(__file__)))
 
-SECREC_FILE_PATH = os.path.join(
+SECRET_FILE_PATH = os.path.join(
     CURDIR,"assets", "ssm_parameter_store", "prod.json"
 )
 
-PREFIX_NAME = "chalicecackend"
-PREFIX_ID = "chalicecackend-id"
+PREFIX_NAME = "BaoTranChalice" # Example: DataLakeCdkBlog
+PREFIX_ID = "baotran-chalice-id" # Example: unique-identifier-data-lake
 
+PRE_CREATED_PARAMETER_STORE_NAME = "/chalice_backend/prod"
 
-def get_config_secret(SECREC_FILE_PATH):
-    f = open(SECREC_FILE_PATH)
-
-
+def get_config_secret(file_path: os.path) -> dict:
+    f = open(file_path)
     ssm_config = json.load(f)
-    print(ssm_config)
     return ssm_config
 
-get_config_secret(SECREC_FILE_PATH)
+ssm_config = get_config_secret(SECRET_FILE_PATH)
+
 import aws_cdk.aws_ssm as ssm
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, **kwargs):
         super().__init__(scope, id, **kwargs)
         self.dynamodb_table = self._create_ddb_table()
+        self.parameter_store_config = self._create_ssm()
+
         self.chalice = Chalice(
             self,
             "BaoTranBackend",
@@ -56,17 +57,19 @@ class ChaliceApp(cdk.Stack):
                 "environment_variables": {
                     "APP_TABLE_NAME": self.dynamodb_table.table_name,
                     "ENV": "prod",
-                    "SSM_NAME": "/chalice_backend/prod",
+                    "SSM_NAME": PRE_CREATED_PARAMETER_STORE_NAME
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
             },
         )
         self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
+        self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
+
 
     def _create_ddb_table(self):
         dynamodb_table = dynamodb.Table(
             self,
-            "AppTable",
+            f"{PREFIX_ID}-table",
             partition_key=dynamodb.Attribute(
                 name="PK", type=dynamodb.AttributeType.STRING
             ),
@@ -78,10 +81,5 @@ class ChaliceApp(cdk.Stack):
         return dynamodb_table
 
     def _create_ssm(self):
-        ssm.StringParameter(self, "Parameter",
-            allowed_pattern=".*",
-            description="The value Foo",
-            parameter_name="FooParameter",
-            string_value="Foo",
-            tier=ssm.ParameterTier.ADVANCED
-        )
+        ps_object = ssm.StringParameter.from_string_parameter_name(self, f"{PREFIX_ID}-precreated", string_parameter_name=PRE_CREATED_PARAMETER_STORE_NAME)
+        return ps_object
