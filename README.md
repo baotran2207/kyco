@@ -1,7 +1,7 @@
 # Updating
 # my_api
 This is my personal api
-https://w2lze5iou2.execute-api.ap-southeast-1.amazonaws.com/api/
+https://508ag7w9rb.execute-api.ap-southeast-1.amazonaws.com/api/
 
 
 ## DB:

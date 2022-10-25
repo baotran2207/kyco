@@ -3,12 +3,8 @@ from chalice import Chalice, AuthResponse
 from chalicelib.config import settings ## loadsetting before start up
 from chalicelib.blueprint import init_blueprint
 from chalicelib.middlewares import init_middlewares
-
-import logging
-
-
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from chalicelib.db.session import SessionLocal
+from chalicelib.logger_app import logger
 
 app = Chalice(app_name='chalice-backend')
 """
@@ -24,14 +20,8 @@ def health():
     return "Hello there from tranthanhbao2207@gmail.com"
 
 
-@app.route('/health')
-def health():
-    return "ok"
-
-
 @app.route('/check_db_connection')
 def check_db_connection():
-    from chalicelib.db.session import SessionLocal
     db = SessionLocal()
     query = db.execute("SELECT 1")
     logger.info(f" Connection ok ! Detail {query} ")
@@ -42,8 +32,41 @@ init_middlewares(app)
 
 
 
-# @app.authorizer()
-# def jwt_auth(auth_request):
-#     token = auth_request.token
-#     decoded = decode_jwt_token(token)
-#     return AuthResponse(routes=["*"], principal_id=decoded["username"])
+############
+## Events ##
+############
+# ref:
+#     - https://github.com/aws/chalice/issues/1566
+# Due to bug in blueprint register , we can only register API endpoint, but events and pure function. Let keep those events and pure function here in app.py until the bug is fixed
+from chalice import Blueprint
+from chalice.app import Cron
+
+
+cron_events = Blueprint(__name__)
+sqs_events = Blueprint(__name__)
+
+@cron_events.schedule(Cron(0, 18, '?', '*', 'MON-FRI', '*'))
+def warm_up_db_everyday(event):
+    logger.info('Warm up Superbase database !')
+    db = SessionLocal()
+    a = db.execute("SELECT 1")
+    return "This should be invoked every weekday at 6pm"
+
+
+@sqs_events.on_sqs_message(
+    queue='BaoTranChaliceGeneric',
+    batch_size=1)
+def handle_sqs_message(event):
+    print('Trigger generic')
+    print(type(event), event)
+    for record in event:
+        print(record, 'in event')
+        logger.info(f" in even ! Detail {record} ")
+
+
+
+
+app.register_blueprint(cron_events)
+app.register_blueprint(sqs_events)
+
+

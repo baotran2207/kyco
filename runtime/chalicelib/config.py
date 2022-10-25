@@ -41,7 +41,8 @@ class AppSettings(BaseSettings):
             host=values.get("POSTGRES_SERVER"),
             path=f"/{values.get('POSTGRES_DB') or ''}",
         )
-
+    # redis
+    REDIS_URL = env_vars.get("REDIS_URL", "")
     # Security
     secret_key: SecretStr = env_vars.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
@@ -65,6 +66,11 @@ class AppSettings(BaseSettings):
     # Dynamo
     DYNAMO_TABLE_NAME:str = os.environ.get('APP_TABLE_NAME', '')
     DYNAMODB_STREAM_ARN:str = os.environ.get('DYNAMODB_STREAM_ARN', '')
+
+
+    # SQS
+    SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
+    SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
 
 
 settings = AppSettings()
