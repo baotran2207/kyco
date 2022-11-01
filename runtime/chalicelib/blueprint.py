@@ -22,7 +22,7 @@ def init_blueprint(app: Chalice):
     """
     # v1
     app.register_blueprint(health_routes, url_prefix='/v1')
-    # app.register_blueprint(auth_routes, url_prefix='/v1/auth')
+    app.register_blueprint(auth_routes, url_prefix='/v1/auth')
     # app.register_blueprint(users_blueprints, url_prefix='/v1')
 
 

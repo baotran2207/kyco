@@ -9,6 +9,7 @@ from aws_cdk import (
     aws_sqs,
     aws_cloudwatch as aws_cw,
     aws_iam as iam_,
+    aws_cognito as cognito,
     Duration
 )
 
@@ -53,6 +54,16 @@ class ChaliceApp(cdk.Stack):
 
         self.sqs_sendemail = self._create_sqs("send-email", "SendEmail")
         self.sqs_generic = self._create_sqs("generic-queue", "Generic") # for generic task
+
+        self.user_pool = self._create_cognito()
+        self.cognito_app_client = self.user_pool.add_client(
+            id=f"{PREFIX_ID}-app-client",
+            user_pool_client_name=f"{PREFIX_NAME}ClientAuth",
+            auth_flows=cognito.AuthFlow(user_password=True),
+            generate_secret=False,
+        )
+
+
         self.chalice = Chalice(
             self,
             "BaoTranBackend",
@@ -65,6 +76,9 @@ class ChaliceApp(cdk.Stack):
 
                     "SQS_GENERIC" : self.sqs_generic.queue_name,
                     "SQS_SENDEMAIL" : self.sqs_sendemail.queue_name,
+
+                    "COGNITO_USER_POOL": self.user_pool.user_pool_arn,
+                    "COGNITO_APP_CLIENT_ID": self.cognito_app_client.user_pool_client_id,
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
             },
@@ -73,6 +87,8 @@ class ChaliceApp(cdk.Stack):
         self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
         self.sqs_sendemail.grant_consume_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_generic.grant_consume_messages(self.chalice.get_role("DefaultRole"))
+
+        self.user_pool.grant(self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser")
 
 
     def _create_ddb_table(self):
@@ -100,3 +116,34 @@ class ChaliceApp(cdk.Stack):
             visibility_timeout=Duration.seconds(60), ## Function timeout <= SQS timeout . Currently function timeout is 60s, TODO: reduce both function timeout and queue timeout
 
         )
+
+    def _create_cognito(self):
+        return cognito.UserPool(
+            self,
+            f"{PREFIX_ID}-users-pool",
+            user_pool_name=f"{PREFIX_NAME}UsersPool",
+            self_sign_up_enabled=True,
+            sign_in_aliases=cognito.SignInAliases(
+                email=True,
+                phone=True,
+            ),
+            account_recovery=cognito.AccountRecovery.EMAIL_AND_PHONE_WITHOUT_MFA,
+            # user_verification=cognito.UserVerificationConfig(
+            #     email_subject="Verify your email for our awesome app!",
+            #     email_body="Thanks for signing up to our awesome app! Your verification code is {####}",
+            #     email_style=cognito.VerificationEmailStyle.CODE,
+            #     sms_message="Thanks for signing up to our awesome app! Your verification code is {####}"
+            # )
+            standard_attributes=cognito.StandardAttributes(
+                email=cognito.StandardAttribute(
+                    required=True,
+                    mutable=False
+                ),
+                # phone=cognito.StandardAttribute(
+                #     required=False,
+                #     mutable=True
+                # )
+            ),
+
+        )
+

@@ -6,14 +6,15 @@ from chalicelib.middlewares import init_middlewares
 from chalicelib.db.session import SessionLocal
 from chalicelib.logger_app import logger
 
-app = Chalice(app_name='chalice-backend')
-"""
-Local localhost:8000/v1/users/baotran
-stage: localhost:8000/{stage}v1/users/baotran
 
-localhost:8000/dev/v1/users/baotran
-localhost:8000/api/v1/users/baotran
-"""
+from chalicelib.services.authorizers import chalice_authorizer
+app = Chalice(app_name='chalice-backend')
+
+
+@app.route('/user-pools', methods=['GET'], authorizer=chalice_authorizer)
+def authenticated():
+    return {"success": True}
+
 
 @app.route('/')
 def health():
@@ -45,7 +46,7 @@ from chalice.app import Cron
 cron_events = Blueprint(__name__)
 sqs_events = Blueprint(__name__)
 
-@cron_events.schedule(Cron(0, 18, '?', '*', 'MON-FRI', '*'))
+@cron_events.schedule(Cron(0, 18, '?', '*', '*', '*'))
 def warm_up_db_everyday(event):
     logger.info('Warm up Superbase database !')
     db = SessionLocal()
