@@ -71,3 +71,18 @@ app.register_blueprint(cron_events)
 app.register_blueprint(sqs_events)
 
 
+
+@app.route('/test_sqs', methods=['GET'])
+def test_sqs():
+    from chalicelib.services.sqs_service import sqs_generic ,send_message
+    print('test message ')
+    test = send_message(
+        queue=sqs_generic,
+        message_body="test sqs mesg",
+        message_attributes= {
+                    'path': {'StringValue': "test", 'DataType': 'String'},
+                    'line': {'StringValue': "trigger", 'DataType': 'String'}
+        }
+    )
+
+    return test

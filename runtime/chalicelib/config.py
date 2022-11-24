@@ -76,6 +76,6 @@ class AppSettings(BaseSettings):
     # SQS
     SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
     SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
-
+    SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
 
 settings = AppSettings()

@@ -13,7 +13,5 @@ def init_middlewares(app: Chalice) -> None:
                 headers={'Content-Type': 'text/plain'}
             )
 
-
-
     app.register_middleware(hander_errors, event_type='all')
 

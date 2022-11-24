@@ -54,6 +54,11 @@ class ChaliceApp(cdk.Stack):
 
         self.sqs_sendemail = self._create_sqs("send-email", "SendEmail")
         self.sqs_generic = self._create_sqs("generic-queue", "Generic") # for generic task
+        # self.sqs_dead_letter = self._create_sqs("deadletter-queue", "DeadLetter") # for
+        self.sqs_dead_letter = aws_sqs.DeadLetterQueue(
+            max_receive_count=123,
+            queue=self.sqs_generic,
+        )
 
         self.user_pool = self._create_cognito()
         self.cognito_app_client = self.user_pool.add_client(
@@ -69,6 +74,7 @@ class ChaliceApp(cdk.Stack):
             "BaoTranBackend",
             source_dir=RUNTIME_SOURCE_DIR,
             stage_config={
+                "lambda_memory_size": 256,
                 "environment_variables": {
                     "APP_TABLE_NAME": self.dynamodb_table.table_name,
                     "ENV": "prod",
@@ -76,6 +82,7 @@ class ChaliceApp(cdk.Stack):
 
                     "SQS_GENERIC" : self.sqs_generic.queue_name,
                     "SQS_SENDEMAIL" : self.sqs_sendemail.queue_name,
+                    # "SQS_DEADLETTER" : self.sqs_dead_letter.queue_name,
 
                     "COGNITO_USER_POOL": self.user_pool.user_pool_arn,
                     "COGNITO_APP_CLIENT_ID": self.cognito_app_client.user_pool_client_id,
@@ -86,7 +93,9 @@ class ChaliceApp(cdk.Stack):
         self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
         self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
         self.sqs_sendemail.grant_consume_messages(self.chalice.get_role("DefaultRole"))
+        self.sqs_sendemail.grant_send_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_generic.grant_consume_messages(self.chalice.get_role("DefaultRole"))
+        self.sqs_generic.grant_send_messages(self.chalice.get_role("DefaultRole"))
 
         self.user_pool.grant(self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser")
 

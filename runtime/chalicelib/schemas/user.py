@@ -1,5 +1,5 @@
 from typing import  Optional
-from pydantic import BaseModel, EmailStr , fields
+from pydantic import BaseModel, EmailStr , fields, validator
 from chalicelib.enums import *
 
 
@@ -13,6 +13,13 @@ class UserBase(CustomBaseModel):
 class UserCreate(CustomBaseModel):
     email: EmailStr
     password: str
+
+    @validator("password")
+    def is_long_enough(cls, value):
+        if len(value) < 3:
+            raise ValueError("password does not meet the requirements")
+        return value
+
 class UserUpdate(CustomBaseModel):
     password: Optional[str] = None
 
