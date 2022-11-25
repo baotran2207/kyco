@@ -45,6 +45,7 @@ from chalice.app import Cron
 
 cron_events = Blueprint(__name__)
 sqs_events = Blueprint(__name__)
+s3_events = Blueprint(__name__)
 
 @cron_events.schedule(Cron(0, 18, '?', '*', '*', '*'))
 def warm_up_db_everyday(event):
@@ -59,18 +60,29 @@ def warm_up_db_everyday(event):
     batch_size=1)
 def handle_sqs_message(event):
     print('Trigger generic')
-    print(type(event), event)
+    print("dict ", event.to_dict())
+    print("body ", event.body)
+    logger.info("body ", event.body)
     for record in event:
         print(record, 'in event')
         logger.info(f" in even ! Detail {record} ")
 
 
-
+# TODO: https://aws.github.io/chalice/topics/events.html#s3-events current version does not support existing bucket created via cdk .
+@s3_events.on_s3_event(
+    bucket=settings.S3_MAIN_BUCKET,
+    prefix="users_upload",
+    events=['s3:ObjectCreated:*']
+)
+def handle_s3_event(event):
+    print("Received event for bucket: %s, key: %s",
+                  event.bucket, event.key)
+    app.log.info("Received event for bucket: %s, key: %s",
+                  event.bucket, event.key)
 
 app.register_blueprint(cron_events)
 app.register_blueprint(sqs_events)
-
-
+# app.register_blueprint(s3_events)
 
 @app.route('/test_sqs', methods=['GET'])
 def test_sqs():

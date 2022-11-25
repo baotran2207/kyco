@@ -97,6 +97,5 @@ def delete_message(message):
         raise error
 
 
-print(settings.SQS_GENERIC)
 sqs_generic = get_queue(settings.SQS_GENERIC)
 

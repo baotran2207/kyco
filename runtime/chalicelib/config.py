@@ -73,6 +73,8 @@ class AppSettings(BaseSettings):
     DYNAMODB_STREAM_ARN:str = os.environ.get('DYNAMODB_STREAM_ARN', '')
 
 
+    # s3
+    S3_MAIN_BUCKET:str = os.environ.get("S3_MAIN_BUCKET", "")
     # SQS
     SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
     SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")

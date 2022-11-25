@@ -10,6 +10,7 @@ from aws_cdk import (
     aws_cloudwatch as aws_cw,
     aws_iam as iam_,
     aws_cognito as cognito,
+    aws_s3_notifications as aws_s3_noti,
     Duration
 )
 
@@ -51,7 +52,7 @@ class ChaliceApp(cdk.Stack):
         super().__init__(scope, id, **kwargs)
         self.dynamodb_table = self._create_ddb_table()
         self.parameter_store_config = self._create_ssm()
-
+        self.bucket = self._create_s3_bucket()
         self.sqs_sendemail = self._create_sqs("send-email", "SendEmail")
         self.sqs_generic = self._create_sqs("generic-queue", "Generic") # for generic task
         # self.sqs_dead_letter = self._create_sqs("deadletter-queue", "DeadLetter") # for
@@ -80,6 +81,7 @@ class ChaliceApp(cdk.Stack):
                     "ENV": "prod",
                     "SSM_NAME": PRE_CREATED_PARAMETER_STORE_NAME,
 
+                    "S3_MAIN_BUCKET": self.bucket.bucket_name,
                     "SQS_GENERIC" : self.sqs_generic.queue_name,
                     "SQS_SENDEMAIL" : self.sqs_sendemail.queue_name,
                     # "SQS_DEADLETTER" : self.sqs_dead_letter.queue_name,
@@ -90,8 +92,14 @@ class ChaliceApp(cdk.Stack):
                 }
             },
         )
+
+        self.chalice_role = self.chalice.get_role("DefaultRole")
+
+        self.bucket.grant_read_write(self.chalice_role)
+        self.bucket.add_event_notification(aws_s3.EventType.OBJECT_CREATED_PUT, aws_s3_noti.SqsDestination(self.sqs_generic))
         self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
         self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
+
         self.sqs_sendemail.grant_consume_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_sendemail.grant_send_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_generic.grant_consume_messages(self.chalice.get_role("DefaultRole"))
@@ -99,6 +107,12 @@ class ChaliceApp(cdk.Stack):
 
         self.user_pool.grant(self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser")
 
+
+    def _create_s3_bucket(self):
+        return aws_s3.Bucket(self,
+            id=f"{PREFIX_ID}-main",
+            # bucket_name=f"{PREFIX_NAME.lower()}-main",
+        )
 
     def _create_ddb_table(self):
         dynamodb_table = dynamodb.Table(
