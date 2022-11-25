@@ -132,3 +132,5 @@ dmypy.json
 infrastructure/assets/ssm_parameter_store/
 infrastructure/chalice.out/
 infrastructure/cdk.out/
+
+runtime/.chalice/config.json

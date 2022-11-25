@@ -12,13 +12,15 @@ def get_ssm_object(name) -> dict:
     return json.loads(parameter['Parameter']['Value'])
 
 env_vars = get_ssm_object(ssm_name)
+
+def _get_env_from_os_or_ssm(env_key):
+    return os.environ.get(env_key, '') or env_vars.get(env_key)
 class AppSettings(BaseSettings):
     ENV:str = env_vars.get("ENV")
 
     # Init User
-    WEBMASTER_EMAIL: str = env_vars.get("WEBMASTER_EMAIL")
-    WEBMASTER_PASSWORD: str = env_vars.get("WEBMASTER_PASSWORD")
-
+    WEBMASTER_EMAIL: str = _get_env_from_os_or_ssm("WEBMASTER_EMAIL")
+    WEBMASTER_PASSWORD: str = _get_env_from_os_or_ssm("WEBMASTER_PASSWORD")
     # DB
     POSTGRES_SERVER: str = env_vars.get("POSTGRES_SERVER")
     POSTGRES_USER: str = env_vars.get("POSTGRES_USER")
@@ -41,8 +43,12 @@ class AppSettings(BaseSettings):
             host=values.get("POSTGRES_SERVER"),
             path=f"/{values.get('POSTGRES_DB') or ''}",
         )
-
+    # redis
+    REDIS_URL = env_vars.get("REDIS_URL", "")
     # Security
+    COGNITO_USER_POOL = _get_env_from_os_or_ssm('COGNITO_USER_POOL')
+    COGNITO_USER_POOL_ID = COGNITO_USER_POOL and COGNITO_USER_POOL.split('/')[-1]
+    COGNITO_APP_CLIENT_ID = _get_env_from_os_or_ssm("COGNITO_APP_CLIENT_ID")
     secret_key: SecretStr = env_vars.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
 
@@ -66,5 +72,12 @@ class AppSettings(BaseSettings):
     DYNAMO_TABLE_NAME:str = os.environ.get('APP_TABLE_NAME', '')
     DYNAMODB_STREAM_ARN:str = os.environ.get('DYNAMODB_STREAM_ARN', '')
 
+
+    # s3
+    S3_MAIN_BUCKET:str = os.environ.get("S3_MAIN_BUCKET", "")
+    # SQS
+    SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
+    SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
+    SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
 
 settings = AppSettings()
