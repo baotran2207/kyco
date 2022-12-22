@@ -1,8 +1,4 @@
-
 from chalice import Blueprint, Chalice
-
-
-
 
 # @s3_bp.on_s3_event(bucket='databricks-workspace-stack-lambdazipsbucket-1or12r81xzxfg',
 #                  events=['s3:ObjectCreated:*'])

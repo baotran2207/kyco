@@ -1,5 +1,3 @@
-
-
 # from chalice import Blueprint
 # from chalice.app import Cron
 # from chalicelib.db.session import SessionLocal

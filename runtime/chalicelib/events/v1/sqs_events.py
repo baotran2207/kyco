@@ -10,6 +10,3 @@
 #     print('Trigger generic')
 #     for record in event:
 #         sqs_bp.current_app.log.debug("Received message with contents: %s", record.body)
-
-
-

@@ -1,10 +1,10 @@
 import uuid as uuid_lib
 
+from chalicelib.db.base_class import Base
+from chalicelib.enums import *
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, column, func
 from sqlalchemy.orm import relationship
 
-from chalicelib.db.base_class import Base
-from chalicelib.enums import *
 
 class User(Base):
     id = Column(String, primary_key=True, index=True, default=uuid_lib.uuid4)

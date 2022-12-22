@@ -1,9 +1,9 @@
-from chalicelib.logger_app import logger
-from chalicelib.config import settings
 import boto3
 from botocore.exceptions import ClientError
+from chalicelib.config import settings
+from chalicelib.logger_app import logger
 
-sqs = boto3.resource('sqs')
+sqs = boto3.resource("sqs")
 # snippet-end:[python.example_code.sqs.message_wrapper_imports]
 
 
@@ -21,6 +21,8 @@ def get_queue(name):
         raise error
     else:
         return queue
+
+
 # snippet-start:[python.example_code.sqs.SendMessage]
 def send_message(queue, message_body, message_attributes=None):
     """
@@ -36,14 +38,15 @@ def send_message(queue, message_body, message_attributes=None):
 
     try:
         response = queue.send_message(
-            MessageBody=message_body,
-            MessageAttributes=message_attributes
+            MessageBody=message_body, MessageAttributes=message_attributes
         )
     except ClientError as error:
         logger.exception("Send message failed: %s", message_body)
         raise error
     else:
         return response
+
+
 # snippet-end:[python.example_code.sqs.SendMessage]
 
 
@@ -61,31 +64,35 @@ def send_messages(queue, messages):
              messages.
     """
     try:
-        entries = [{
-            'Id': str(ind),
-            'MessageBody': msg['body'],
-            'MessageAttributes': msg['attributes']
-        } for ind, msg in enumerate(messages)]
+        entries = [
+            {
+                "Id": str(ind),
+                "MessageBody": msg["body"],
+                "MessageAttributes": msg["attributes"],
+            }
+            for ind, msg in enumerate(messages)
+        ]
         response = queue.send_messages(Entries=entries)
-        if 'Successful' in response:
-            for msg_meta in response['Successful']:
+        if "Successful" in response:
+            for msg_meta in response["Successful"]:
                 logger.info(
                     "Message sent: %s: %s",
-                    msg_meta['MessageId'],
-                    messages[int(msg_meta['Id'])]['body']
+                    msg_meta["MessageId"],
+                    messages[int(msg_meta["Id"])]["body"],
                 )
-        if 'Failed' in response:
-            for msg_meta in response['Failed']:
+        if "Failed" in response:
+            for msg_meta in response["Failed"]:
                 logger.warning(
                     "Failed to send: %s: %s",
-                    msg_meta['MessageId'],
-                    messages[int(msg_meta['Id'])]['body']
+                    msg_meta["MessageId"],
+                    messages[int(msg_meta["Id"])]["body"],
                 )
     except ClientError as error:
         logger.exception("Send messages failed to queue: %s", queue)
         raise error
     else:
         return response
+
 
 # snippet-start:[python.example_code.sqs.DeleteMessage]
 def delete_message(message):
@@ -98,4 +105,3 @@ def delete_message(message):
 
 
 sqs_generic = get_queue(settings.SQS_GENERIC)
-

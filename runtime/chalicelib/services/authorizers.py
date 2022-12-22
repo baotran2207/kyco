@@ -1,20 +1,17 @@
 from dataclasses import dataclass
-from pprint import pprint
 from typing import Protocol
 
 import boto3
 from botocore.exceptions import ClientError
-from chalice import CognitoUserPoolAuthorizer
-
-from chalicelib.logger_app import logger
+from chalice import ChaliceUnhandledError, CognitoUserPoolAuthorizer, ConflictError
 from chalicelib.config import settings
+from chalicelib.logger_app import logger
 from chalicelib.schemas import UserBase, UserCreate, UserLoginResponse, UserSignIn
-from chalice import ConflictError, BadRequestError, ChaliceUnhandledError
 
 cognito_authorizer = CognitoUserPoolAuthorizer(
     "BaoTranChaliceUserPool",
     header="Bearer",
-    provider_arns=[settings.COGNITO_USER_POOL]
+    provider_arns=[settings.COGNITO_USER_POOL],
 )
 
 
@@ -22,12 +19,11 @@ chalice_authorizer = cognito_authorizer
 cognito_client = boto3.client("cognito-idp")
 
 
-
 class Authenticator(Protocol):
     def sign_up(self, user: UserCreate):
         pass
 
-    def confirm_user_sign_up(self, user: UserCreate, confirmation_code:str):
+    def confirm_user_sign_up(self, user: UserCreate, confirmation_code: str):
         pass
 
     def confirm_user_admin_sign_up(self, user: UserCreate):
@@ -53,6 +49,8 @@ class Authenticator(Protocol):
 
     def list_users(self):
         pass
+
+
 @dataclass
 class CognitoAuth:
     cognito_client: boto3.Session
@@ -64,15 +62,15 @@ class CognitoAuth:
             response = self.cognito_client.list_users(UserPoolId=self.user_pool_id)
             users = response.get("Users")
         except ClientError as err:
-            err_code = err.response['Error']['Code']
-            err_msg = err.response['Error']['Message']
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
             res_msg = f"Couldn't list users for . Here's why: {err_code}: {err_msg}"
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
         else:
             return users
 
-    def get_user(self, access_token:str):
+    def get_user(self, access_token: str):
         user = self.cognito_client.get_user(
             ClientId=self.app_client_id,
             AccessToken=access_token,
@@ -120,13 +118,12 @@ class CognitoAuth:
     def resend_confirmation(self, username):
         try:
             response = self.cognito_client.resend_confirmation_code(
-                ClientId=self.app_client_id,
-                Username=username
+                ClientId=self.app_client_id, Username=username
             )
-            delivery = response['CodeDeliveryDetails']
+            delivery = response["CodeDeliveryDetails"]
         except ClientError as err:
-            err_code = err.response['Error']['Code']
-            err_msg = err.response['Error']['Message']
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
             res_msg = f"Couldn't resend confirmation to {username}. Here's why: {err_code}: {err_msg}"
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
@@ -134,7 +131,7 @@ class CognitoAuth:
         else:
             return delivery
 
-    def confirm_user_sign_up(self, username:str , confirmation_code):
+    def confirm_user_sign_up(self, username: str, confirmation_code):
         try:
             self.cognito_client.confirm_sign_up(
                 ClientId=self.app_client_id,
@@ -142,8 +139,8 @@ class CognitoAuth:
                 Username=username,
             )
         except ClientError as err:
-            err_code = err.response['Error']['Code']
-            err_msg = err.response['Error']['Message']
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
             res_msg = f"Couldn't confirm sign up for  {username}. Here's why: {err_code}: {err_msg}"
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
@@ -158,7 +155,6 @@ class CognitoAuth:
         )
         res = response["AuthenticationResult"]
         return UserLoginResponse(**res)
-
 
 
 authenticator = CognitoAuth(

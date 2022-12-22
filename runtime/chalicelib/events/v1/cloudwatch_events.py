@@ -1,5 +1,3 @@
-
-
 # from chalice import Blueprint, Chalice
 
 # cw_bp = Blueprint(__name__)
