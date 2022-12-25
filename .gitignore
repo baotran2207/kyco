@@ -135,3 +135,4 @@ infrastructure/cdk.out/
 
 runtime/.chalice/config.json
 .DS_Store
+.prod
