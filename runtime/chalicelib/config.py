@@ -86,5 +86,8 @@ class AppSettings(BaseSettings):
     SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
     SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
 
+    # GITHUB
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
 
 settings = AppSettings()

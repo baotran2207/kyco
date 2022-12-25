@@ -1,11 +1,14 @@
+import random
+
 from chalice import AuthResponse, Blueprint, Chalice
-from chalice.app import Cron
+from chalice.app import Cron, Rate
 from chalicelib.blueprint import init_blueprint
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.logger_app import logger
 from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.services.github_service import update_file
 
 app = Chalice(app_name="chalice-backend")
 
@@ -26,6 +29,13 @@ def check_db_connection():
     query = db.execute("SELECT 1")
     logger.info(f" Connection ok ! Detail {query} ")
     return "Connection is ok"
+
+
+@app.route("/test_github")
+def commit_github():
+    filename = "autocommit.txt"
+    repo = "baotran2207/til"
+    return update_file(filename, "auto commit", repo)
 
 
 init_blueprint(app)
@@ -51,6 +61,15 @@ def warm_up_db_everyday(event):
     db = SessionLocal()
     a = db.execute("SELECT 1")
     return "This should be invoked every weekday at 6pm"
+
+
+@cron_events.schedule(Rate(8, unit=Rate.HOURS))
+def auto_commit_cron(event):
+    if random.choice([True, False]):
+        filename = "autocommit.txt"
+        repo = "baotran2207/til"
+        update_file(filename, "auto commit", repo)
+    logger.info("No commit !")
 
 
 @sqs_events.on_sqs_message(queue="BaoTranChaliceGeneric", batch_size=1)

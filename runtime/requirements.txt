@@ -1,5 +1,6 @@
 boto3<2.0.0
 sqlalchemy<1.4
+requests
 aws_lambda_powertools
 pydantic
 pydantic[email]
@@ -7,4 +8,5 @@ psycopg2-binary
 PyJWT
 celery
 graphene>=3.1
+PyGithub
 # redis[hiredis]

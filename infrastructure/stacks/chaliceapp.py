@@ -75,6 +75,7 @@ class ChaliceApp(cdk.Stack):
                     # "SQS_DEADLETTER" : self.sqs_dead_letter.queue_name,
                     "COGNITO_USER_POOL": self.user_pool.user_pool_arn,
                     "COGNITO_APP_CLIENT_ID": self.cognito_app_client.user_pool_client_id,
+                    "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 },
             },
