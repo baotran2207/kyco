@@ -1,5 +1,3 @@
-from pprint import pprint
-
 from chalice import BadRequestError, Blueprint
 from chalicelib.config import settings
 from chalicelib.schemas import UserCreate, UserSignIn

@@ -8,6 +8,7 @@ from sqlalchemy.orm import relationship
 
 class User(Base):
     id = Column(String, primary_key=True, index=True, default=uuid_lib.uuid4)
+    cognito_id = Column(String, index=True)
     email = Column(String, index=True)
     phone = Column(String, index=True)
     full_name = Column(String, index=True)

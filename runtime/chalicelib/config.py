@@ -3,9 +3,10 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
+from dotenv import load_dotenv
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
 
-ssm_name = os.getenv("SSM_NAME")
+load_dotenv("../.dev")
 
 
 def get_ssm_object(name) -> dict:
@@ -14,24 +15,19 @@ def get_ssm_object(name) -> dict:
     return json.loads(parameter["Parameter"]["Value"])
 
 
-env_vars = get_ssm_object(ssm_name)
-
-
-def _get_env_from_os_or_ssm(env_key):
-    return os.environ.get(env_key, "") or env_vars.get(env_key)
-
-
 class AppSettings(BaseSettings):
-    ENV: str = env_vars.get("ENV")
+    ENV: str = os.environ.get("ENV")
 
     # Init User
-    WEBMASTER_EMAIL: str = _get_env_from_os_or_ssm("WEBMASTER_EMAIL")
-    WEBMASTER_PASSWORD: str = _get_env_from_os_or_ssm("WEBMASTER_PASSWORD")
+    WEBMASTER_EMAIL: str = os.environ.get(
+        "WEBMASTER_EMAIL", "tranthanhbao2207@gmail.com"
+    )
+    WEBMASTER_PASSWORD: SecretStr = os.environ.get("WEBMASTER_PASSWORD")
     # DB
-    POSTGRES_SERVER: str = env_vars.get("POSTGRES_SERVER")
-    POSTGRES_USER: str = env_vars.get("POSTGRES_USER")
-    POSTGRES_PASSWORD: str = env_vars.get("POSTGRES_PASSWORD")
-    POSTGRES_DB: str = env_vars.get("POSTGRES_DB")
+    POSTGRES_SERVER: str = os.environ.get("POSTGRES_SERVER")
+    POSTGRES_USER: str = os.environ.get("POSTGRES_USER")
+    POSTGRES_PASSWORD: SecretStr = os.environ.get("POSTGRES_PASSWORD")
+    POSTGRES_DB: str = os.environ.get("POSTGRES_DB")
     SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
@@ -51,16 +47,16 @@ class AppSettings(BaseSettings):
         )
 
     # redis
-    REDIS_URL = env_vars.get("REDIS_URL", "")
+    REDIS_URL = os.environ.get("REDIS_URL", "")
     # Security
-    COGNITO_USER_POOL = _get_env_from_os_or_ssm("COGNITO_USER_POOL")
+    COGNITO_USER_POOL = os.environ.get("COGNITO_USER_POOL")
     COGNITO_USER_POOL_ID = COGNITO_USER_POOL and COGNITO_USER_POOL.split("/")[-1]
-    COGNITO_APP_CLIENT_ID = _get_env_from_os_or_ssm("COGNITO_APP_CLIENT_ID")
-    secret_key: SecretStr = env_vars.get("SecretStr")
+    COGNITO_APP_CLIENT_ID = os.environ.get("COGNITO_APP_CLIENT_ID")
+    secret_key: SecretStr = os.environ.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
 
     # sentry
-    SENTRY_DSN: Optional[HttpUrl] = env_vars.get("SENTRY_DSN")
+    SENTRY_DSN: Optional[HttpUrl] = os.environ.get("SENTRY_DSN")
 
     @validator("SENTRY_DSN", pre=True)
     def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
