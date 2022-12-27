@@ -1,5 +1,3 @@
-
-
 # from chalice import Blueprint, Chalice
 # from chalicelib.config import settings
 

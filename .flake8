@@ -1,0 +1,8 @@
+[flake8]
+max-line-length = 100
+max-complexity = 16
+
+select = C,E,W,B,B9
+ignore = E203,E501,W503,E731,E262,E266
+
+exclude = runtime/migrations,infrastructure/assets/,runtime/chalicelib/templates,runtime/chalicelib/static,runtime/chalicelib/modeler

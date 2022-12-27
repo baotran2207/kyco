@@ -1,10 +1,8 @@
-
-
 from chalice import Blueprint, Chalice
-
 from chalicelib.dynamo_db.base import dynamodb_table
-from chalicelib.services.users import get_user
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.services.users import get_user
+
 users_blueprints = Blueprint(__name__)
 
 
@@ -20,12 +18,13 @@ users_blueprints = Blueprint(__name__)
 #     return item
 
 
-@users_blueprints.route('/user_info', methods=['GET'], authorizer=chalice_authorizer)
+@users_blueprints.route("/user_info", methods=["GET"], authorizer=chalice_authorizer)
 def user_info():
     headers = users_blueprints.current_app.current_request.headers
     print(headers)
-    return 'ok'
+    return "ok"
 
-@users_blueprints.route('/users', methods=['GET'])
+
+@users_blueprints.route("/users", methods=["GET"])
 def get_users():
     return "ok"

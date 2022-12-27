@@ -1,15 +1,19 @@
-from typing import  Optional
-from pydantic import BaseModel, EmailStr , fields, validator
+from typing import Optional
+
 from chalicelib.enums import *
+from pydantic import BaseModel, EmailStr, fields, validator
 
 
 class CustomBaseModel(BaseModel):
     def toJSON(self):
         return self.dict()
 
+
 class UserBase(CustomBaseModel):
-    uuid : str
+    uuid: str
     meta_data: dict
+
+
 class UserCreate(CustomBaseModel):
     email: EmailStr
     password: str
@@ -19,6 +23,7 @@ class UserCreate(CustomBaseModel):
         if len(value) < 3:
             raise ValueError("password does not meet the requirements")
         return value
+
 
 class UserUpdate(CustomBaseModel):
     password: Optional[str] = None
@@ -44,11 +49,8 @@ class UserSignIn(CustomBaseModel):
 
 class UserLoginResponse(CustomBaseModel):
     # https://stackoverflow.com/questions/48543948/aws-cognito-whats-the-difference-between-access-and-identity-tokens
-    AccessToken: str # for external services , like aws ...
+    AccessToken: str  # for external services , like aws ...
     ExpiresIn: int
-    IdToken: str # this is token for identity , our application chalice will use this as Authorization: Bearer <token>
+    IdToken: str  # this is token for identity , our application chalice will use this as Authorization: Bearer <token>
     RefreshToken: str
     TokenType: str
-
-
-
