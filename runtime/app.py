@@ -10,7 +10,7 @@ from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
 from chalicelib.services.github_service import update_file
 
-app = Chalice(app_name="chalice-backend")
+app = Chalice(app_name=settings.PROJECT_NAME)
 
 
 @app.route("/user-pools", methods=["GET"], authorizer=chalice_authorizer)
@@ -69,17 +69,27 @@ def auto_commit_cron(event):
         filename = "autocommit.txt"
         repo = "baotran2207/til"
         update_file(filename, "auto commit", repo)
-    logger.info("No commit !")
+    else:
+        logger.info("No commit !")
 
 
-@sqs_events.on_sqs_message(queue="BaoTranChaliceGeneric", batch_size=1)
-def handle_sqs_message(event):
-    print("Trigger generic")
-    print("dict ", event.to_dict())
-    print("body ", event.body)
+@sqs_events.on_sqs_message(queue_arn=settings.SQS_GENERIC, batch_size=1)
+def handle_sqs_generic(event):
+    logger.info("Trigger generic")
+    logger.info("dict ", event.to_dict())
+    logger.info("body ", event.body)
     logger.info("body ", event.body)
     for record in event:
-        print(record, "in event")
+        logger.info(f" in even ! Detail {record} ")
+
+
+@sqs_events.on_sqs_message(queue_arn=settings.SQS_SENDEMAIL, batch_size=1)
+def handle_sqs_email(event):
+    logger.info("Trigger email")
+    logger.info("dict ", event.to_dict())
+    logger.info("body ", event.body)
+    logger.info("body ", event.body)
+    for record in event:
         logger.info(f" in even ! Detail {record} ")
 
 
@@ -88,8 +98,7 @@ def handle_sqs_message(event):
     bucket=settings.S3_MAIN_BUCKET, prefix="users_upload", events=["s3:ObjectCreated:*"]
 )
 def handle_s3_event(event):
-    print("Received event for bucket: %s, key: %s", event.bucket, event.key)
-    app.log.info("Received event for bucket: %s, key: %s", event.bucket, event.key)
+    logger.info("Received event for bucket: %s, key: %s", event.bucket, event.key)
 
 
 app.register_blueprint(cron_events)
@@ -101,7 +110,7 @@ app.register_blueprint(sqs_events)
 def test_sqs():
     from chalicelib.services.sqs_service import send_message, sqs_generic
 
-    print("test message ")
+    logger.info("test message ")
     test = send_message(
         queue=sqs_generic,
         message_body="test sqs mesg",

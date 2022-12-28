@@ -3,10 +3,14 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
-from dotenv import load_dotenv
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
 
-load_dotenv("../.dev")
+ENV = os.environ.get("ENV")
+
+if ENV == "dev":
+    from dotenv import load_dotenv
+
+    load_dotenv("../.dev")
 
 
 def get_ssm_object(name) -> dict:
@@ -16,8 +20,8 @@ def get_ssm_object(name) -> dict:
 
 
 class AppSettings(BaseSettings):
-    ENV: str = os.environ.get("ENV")
-
+    PROJECT_NAME: str = os.environ.get("PROJECT_NAME", "kyco")
+    ENV: str = os.environ["ENV"]
     # Init User
     WEBMASTER_EMAIL: str = os.environ.get(
         "WEBMASTER_EMAIL", "tranthanhbao2207@gmail.com"
