@@ -9,9 +9,9 @@ from chalicelib.logger_app import logger
 from chalicelib.schemas import UserBase, UserCreate, UserLoginResponse, UserSignIn
 
 cognito_authorizer = CognitoUserPoolAuthorizer(
-    "BaoTranChaliceUserPool",
+    settings.COGNITO_USER_POOL_NAME,
     header="Bearer",
-    provider_arns=[settings.COGNITO_USER_POOL],
+    provider_arns=[settings.COGNITO_USER_POOL_ARN],
 )
 
 

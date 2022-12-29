@@ -23,12 +23,6 @@ RUNTIME_SOURCE_DIR = os.path.join(
 )
 
 
-# PREFIX_NAME = "BaoTranChalice"
-# Example: DataLakeCdkBlog
-# PREFIX_ID = "baotran-chalice-id"
-# Example: unique-identifier-data-lake
-
-
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, env_vars, **kwargs):
         super().__init__(scope, id, **kwargs)
@@ -50,18 +44,20 @@ class ChaliceApp(cdk.Stack):
             queue=self.sqs_generic,
         )
 
-        self.user_pool = self._create_cognito()
-        self.cognito_app_client = self.user_pool.add_client(
-            id=f"{self.PREFIX_ID}-app-client",
-            user_pool_client_name=f"{self.PREFIX_NAME}ClientAuth",
-            auth_flows=cognito.AuthFlow(user_password=True),
-            generate_secret=False,
+        self.imported_user_pool = cognito.UserPool.from_user_pool_arn(
+            self,
+            id=f"{self.PREFIX_ID}-pre-config-user-pool",
+            user_pool_arn=self.env_vars.get("COGNITO_USER_POOL_ARN"),
         )
 
-        print(
-            self.cognito_app_client.user_pool_client_id,
-            "self.cognito_app_client.user_pool_client_id",
-        )
+        # self.user_pool = self._create_cognito()
+        # self.cognito_app_client = self.user_pool.add_client(
+        #     id=f"{self.PREFIX_ID}-app-client",
+        #     user_pool_client_name=f"{self.PREFIX_NAME}ClientAuth",
+        #     auth_flows=cognito.AuthFlow(user_password=True),
+        #     generate_secret=False,
+        # )
+
         self.chalice = Chalice(
             self,
             "BaoTranBackend",
@@ -74,10 +70,9 @@ class ChaliceApp(cdk.Stack):
                     "S3_MAIN_BUCKET": self.bucket.bucket_name,
                     "SQS_GENERIC": self.sqs_generic.queue_arn,
                     "SQS_SENDEMAIL": self.sqs_sendemail.queue_arn,
-                    # "SQS_DEADLETTER" : self.sqs_dead_letter.queue_name,
-                    "COGNITO_USER_POOL": self.user_pool.user_pool_arn,
-                    "COGNITO_APP_CLIENT_ID": self.cognito_app_client.user_pool_client_id,
-                    "GITHUB_TOKEN": os.getenv("GITHUB_TOKEN"),
+                    "COGNITO_USER_POOL_NAME": "Load from env_vars which is .prod",
+                    "COGNITO_USER_POOL_ARN": "Load from env_vars which is .prod",
+                    "COGNITO_APP_CLIENT_ID": "Load from env_vars which is .prod",
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
                 | self.env_vars,
@@ -99,7 +94,7 @@ class ChaliceApp(cdk.Stack):
         self.sqs_generic.grant_consume_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_generic.grant_send_messages(self.chalice.get_role("DefaultRole"))
 
-        self.user_pool.grant(
+        self.imported_user_pool.grant(
             self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser"
         )
 
@@ -121,16 +116,10 @@ class ChaliceApp(cdk.Stack):
             stream=dynamodb.StreamViewType.NEW_IMAGE,
             removal_policy=cdk.RemovalPolicy.DESTROY,
         )
-        # cdk.CfnOutput(self, f"{self.PREFIX_ID}-table-cfn", value=dynamodb_table.table_name)
+        cdk.CfnOutput(
+            self, f"{self.PREFIX_ID}-table-name", value=dynamodb_table.table_name
+        )
         return dynamodb_table
-
-    # def _create_ssm(self):
-    #     ps_object = ssm.StringParameter.from_string_parameter_name(
-    #         self,
-    #         f"{PREFIX_ID}-precreated",
-    #         string_parameter_name=PRE_CREATED_PARAMETER_STORE_NAME,
-    #     )
-    #     return ps_object
 
     def _create_sqs(self, id: str, sqs_name: str) -> aws_sqs.Queue:
         # Function timeout <= SQS timeout . Currently function timeout is 60s, TODO: reduce both function timeout and queue timeout
@@ -141,28 +130,32 @@ class ChaliceApp(cdk.Stack):
             visibility_timeout=Duration.seconds(60),
         )
 
-    def _create_cognito(self):
-        return cognito.UserPool(
-            self,
-            f"{self.PREFIX_ID}-users-pool",
-            user_pool_name=f"{self.PREFIX_NAME}UsersPool",
-            self_sign_up_enabled=True,
-            sign_in_aliases=cognito.SignInAliases(
-                email=True,
-                phone=True,
-            ),
-            account_recovery=cognito.AccountRecovery.EMAIL_AND_PHONE_WITHOUT_MFA,
-            # user_verification=cognito.UserVerificationConfig(
-            #     email_subject="Verify your email for our awesome app!",
-            #     email_body="Thanks for signing up to our awesome app! Your verification code is {####}",
-            #     email_style=cognito.VerificationEmailStyle.CODE,
-            #     sms_message="Thanks for signing up to our awesome app! Your verification code is {####}"
-            # )
-            standard_attributes=cognito.StandardAttributes(
-                email=cognito.StandardAttribute(required=True, mutable=False),
-                # phone=cognito.StandardAttribute(
-                #     required=False,
-                #     mutable=True
-                # )
-            ),
-        )
+    # def _get_cognito(self, cognito_arn):
+    #     user_pool =  cognito.UserPool(
+    #         self,
+    #         f"{self.PREFIX_ID}-users",
+    #         user_pool_name=f"{self.PREFIX_NAME}Users",
+    #         self_sign_up_enabled=True,
+    #         sign_in_aliases=cognito.SignInAliases(
+    #             email=True,
+    #             phone=True,
+    #         ),
+    #         account_recovery=cognito.AccountRecovery.EMAIL_AND_PHONE_WITHOUT_MFA,
+    #         # user_verification=cognito.UserVerificationConfig(
+    #         #     email_subject="Verify your email for our awesome app!",
+    #         #     email_body="Thanks for signing up to our awesome app! Your verification code is {####}",
+    #         #     email_style=cognito.VerificationEmailStyle.CODE,
+    #         #     sms_message="Thanks for signing up to our awesome app! Your verification code is {####}"
+    #         # )
+    #         standard_attributes=cognito.StandardAttributes(
+    #             email=cognito.StandardAttribute(required=True, mutable=False),
+    #             # phone=cognito.StandardAttribute(
+    #             #     required=False,
+    #             #     mutable=True
+    #             # )
+    #         ),
+    #     )
+
+    #     cdk.CfnOutput(self, f"{self.PREFIX_ID}-users-pool-name", value=user_pool.user_pool_provider_name)
+    #     cdk.CfnOutput(self, f"{self.PREFIX_ID}-users-pool-arn", value=user_pool.user_pool_arn)
+    #     return user_pool

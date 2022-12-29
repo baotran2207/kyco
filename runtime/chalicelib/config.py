@@ -5,7 +5,7 @@ from typing import Any, Dict, Optional
 import boto3
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
 
-ENV = os.environ.get("ENV")
+ENV = os.environ.get("ENV", "dev")
 
 if ENV == "dev":
     from dotenv import load_dotenv
@@ -53,9 +53,12 @@ class AppSettings(BaseSettings):
     # redis
     REDIS_URL = os.environ.get("REDIS_URL", "")
     # Security
-    COGNITO_USER_POOL = os.environ.get("COGNITO_USER_POOL")
-    COGNITO_USER_POOL_ID = COGNITO_USER_POOL and COGNITO_USER_POOL.split("/")[-1]
-    COGNITO_APP_CLIENT_ID = os.environ.get("COGNITO_APP_CLIENT_ID")
+    COGNITO_USER_POOL_NAME: str = os.environ.get("COGNITO_USER_POOL_NAME", "")
+    COGNITO_USER_POOL_ARN: str = os.environ.get("COGNITO_USER_POOL_ARN", "")
+    COGNITO_USER_POOL_ID: str = (
+        COGNITO_USER_POOL_ARN and COGNITO_USER_POOL_ARN.split("/")[-1] or ""
+    )
+    COGNITO_APP_CLIENT_ID: str = os.environ.get("COGNITO_APP_CLIENT_ID", "")
     secret_key: SecretStr = os.environ.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
 
