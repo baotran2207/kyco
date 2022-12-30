@@ -1,23 +1,27 @@
 from chalice import BadRequestError, Blueprint
 from chalicelib.config import settings
+from chalicelib.controller.auth import login
+from chalicelib.controller.users import create_user
 from chalicelib.schemas import UserCreate, UserSignIn
 from chalicelib.services.authorizers import authenticator
-from chalicelib.services.users import create_user, get_user, login_user
 from pydantic import ValidationError
+
+# from chalicelib.services.users import create_user, get_user, login_user
+
 
 auth_routes = Blueprint(__name__)
 
 
 @auth_routes.route("/register", methods=["POST", "GET"])
-def login():
+def register():
     params = auth_routes.current_app.current_request.json_body
     try:
         new_user_info = UserCreate(**params)
     except ValidationError as e:
         raise BadRequestError(f"{e}")
 
-    created_new_user = create_user(new_user_info, authenticator)
-
+    created_new_user = create_user(new_user_info)
+    return "ok"
     return created_new_user.dict()
 
 
@@ -27,7 +31,7 @@ def lookup_user():
 
     logging_user = UserSignIn(**params)
 
-    reponse = login_user(logging_user, authenticator)
+    reponse = login(logging_user, authenticator)
     return reponse.dict()
 
 

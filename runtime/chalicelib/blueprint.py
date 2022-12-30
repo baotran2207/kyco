@@ -1,9 +1,11 @@
 from chalice import Blueprint, Chalice
 from chalicelib.api.v1.auth import auth_routes
+from chalicelib.api.v1.dev import unname_bp
 from chalicelib.api.v1.users import users_blueprints
+from chalicelib.config import settings
 
 # from chalicelib.events.v1.cron_scheduler import cron_bp
-# from chalicelib.events.v1.sqs_events import sqs_bp
+from chalicelib.events.v1.sqs_events import *
 
 health_routes = Blueprint(__name__)
 
@@ -24,6 +26,9 @@ def init_blueprint(app: Chalice):
     app.register_blueprint(auth_routes, url_prefix="/v1/auth")
     app.register_blueprint(users_blueprints, url_prefix="/v1")
 
+    if settings.ENV == "dev":
+        app.register_blueprint(unname_bp, url_prefix="/dev")
+
     # ref:
     #     - https://github.com/aws/chalice/issues/1566
     # app.register_blueprint(dynamodb_bp)
@@ -33,3 +38,8 @@ def init_blueprint(app: Chalice):
     # app.register_blueprint(sqs_bp)
 
     return app
+
+
+events_blueprints = [sqs_bp]
+
+# def init_listeners():

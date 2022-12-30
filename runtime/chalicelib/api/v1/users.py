@@ -1,7 +1,6 @@
 from chalice import Blueprint, Chalice
 from chalicelib.dynamo_db.base import dynamodb_table
 from chalicelib.services.authorizers import chalice_authorizer
-from chalicelib.services.users import get_user
 
 users_blueprints = Blueprint(__name__)
 

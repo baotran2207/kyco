@@ -1,3 +1,5 @@
+import datetime as dt
+import re
 from typing import Optional
 
 from chalicelib.enums import *
@@ -15,8 +17,10 @@ class UserBase(CustomBaseModel):
 
 
 class UserCreate(CustomBaseModel):
-    email: EmailStr
+    email: Optional[EmailStr]
+    phone: Optional[str]
     password: str
+    username: Optional[str]
 
     @validator("password")
     def is_long_enough(cls, value):
@@ -24,13 +28,43 @@ class UserCreate(CustomBaseModel):
             raise ValueError("password does not meet the requirements")
         return value
 
+    @validator("phone")
+    def phone_validation(cls, v):
+        regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
+        if v and not re.search(regex, v, re.I):
+            raise ValueError("Phone Number Invalid.")
+        return v
+
+    @validator("username", pre=True, always=True)
+    def set_username(cls, v, *, values, **kwargs):
+        username = v or values.get("phone") or values.get("email")
+        if not username:
+            raise ValueError("Phone or email invalid !")
+        return username
+
 
 class UserUpdate(CustomBaseModel):
     password: Optional[str] = None
 
 
 class User(CustomBaseModel):
-    pass
+    id: str
+    created_at: dt.datetime
+    lastchanged_at: dt.datetime
+    cognito_id: Optional[str]
+    email: Optional[EmailStr]
+    phone: Optional[str]
+    username: Optional[str]
+    full_name: Optional[str]
+    status: int
+    is_superuser: bool = False
+
+    @validator("username", pre=True, always=True)
+    def set_username(cls, v, *, values, **kwargs):
+        username = v or values.get("phone") or values.get("email")
+        if not username:
+            raise ValueError("Phone or email invalid !")
+        return username
 
 
 class Token(CustomBaseModel):
