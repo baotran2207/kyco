@@ -1,4 +1,5 @@
 mypy
+pre-commit
 black
 isort
 autoflake

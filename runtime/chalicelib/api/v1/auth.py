@@ -26,7 +26,7 @@ def register():
 
 
 @auth_routes.route("/login", methods=["POST"])
-def login():
+def auth_login():
     params = auth_routes.current_app.current_request.json_body
 
     logging_user = UserSignIn(**params)
@@ -51,7 +51,7 @@ def confirm_user():
     params = auth_routes.current_app.current_request.json_body
     email = username = params.get("email")
     confirmation_code = params.get("confirmation_code")
-    print(username)
+
     if not email:
         raise BadRequestError("Username is required")
     if not confirmation_code:

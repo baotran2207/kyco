@@ -30,5 +30,4 @@ def init_listeners():
     setup_log_event_handlers()
     setup_email_event_handlers()
     setup_user_event_handlers()
-    print("listener", logger.level)
     logger.info("init listensers")
