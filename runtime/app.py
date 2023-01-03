@@ -1,19 +1,20 @@
 import random
 
-from chalicelib.logger_app import logger, init_logger
 from chalice import AuthResponse, Blueprint, Chalice
 from chalice.app import Cron, Rate
 from chalicelib.blueprint import events_blueprints, init_blueprint
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.events.base import init_listeners
+from chalicelib.logger_app import init_logger, logger
 from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
 from chalicelib.services.github_service import update_file
 
 app = Chalice(app_name=settings.PROJECT_NAME)
-print(app.log.name)
 init_logger(app)
+
+
 @app.route("/user-pools", methods=["GET"], authorizer=chalice_authorizer)
 def authenticated():
     return {"success": True}

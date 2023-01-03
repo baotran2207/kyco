@@ -22,6 +22,13 @@ RUNTIME_SOURCE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), os.pardir, "runtime"
 )
 
+# COGNITO_TRIGGER_HOOKS = {
+#     "pre_sign_up": "PreSignUp",
+#     "post_authentication": "PostAuthentication",
+#     "pre_authentication": "PreAuthentication",
+
+# }
+
 
 class ChaliceApp(cdk.Stack):
     def __init__(self, scope, id, env_vars, **kwargs):
@@ -49,7 +56,7 @@ class ChaliceApp(cdk.Stack):
             id=f"{self.PREFIX_ID}-pre-config-user-pool",
             user_pool_arn=self.env_vars.get("COGNITO_USER_POOL_ARN"),
         )
-
+        print("debug")
         # self.user_pool = self._create_cognito()
         # self.cognito_app_client = self.user_pool.add_client(
         #     id=f"{self.PREFIX_ID}-app-client",
@@ -78,7 +85,7 @@ class ChaliceApp(cdk.Stack):
                 | self.env_vars,
             },
         )
-
+        print("debug 2")
         self.chalice_role = self.chalice.get_role("DefaultRole")
 
         self.bucket.grant_read_write(self.chalice_role)
@@ -97,6 +104,10 @@ class ChaliceApp(cdk.Stack):
         self.imported_user_pool.grant(
             self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser"
         )
+
+        print("debug 3")
+        # for raw_func_name, lambda_func_name in COGNITO_TRIGGER_HOOKS.items():
+        #     print(self.chalice.get_function(function_name=lambda_func_name))
 
     def _create_s3_bucket(self):
         return aws_s3.Bucket(
