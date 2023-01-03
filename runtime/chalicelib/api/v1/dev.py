@@ -30,7 +30,6 @@ def check_db_connection():
     query = db.execute("SELECT 1")
     logger.info(f" Connection ok ! Detail {query} ")
     logger.error(f"Connection ok ! ")
-    print(logger.level)
     return "Connection is ok"
 
 

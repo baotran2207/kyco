@@ -5,22 +5,15 @@ from chalicelib.config import settings
 from chalicelib.enums import AppEnv
 from rich.logging import RichHandler
 
-logging.basicConfig(
-    level=logging.DEBUG if AppEnv.dev.value == settings.ENV else logging.INFO,
-    format="%(message)s",
-    datefmt="[%X]",
-)
 logger = logging.getLogger(settings.PROJECT_NAME)
 
-logger.info(f"Logger is ready ! Level : {logger.level} !")
+def init_logger(app):
+    if AppEnv.prod.value == settings.ENV:
+        app.log.setLevel(logging.INFO)
+    else:
+        app.log.setLevel(logging.DEBUG)
+        app.log.handlers = [RichHandler()]
+    logger = app.log
 
-# if AppEnv.dev.value == settings.ENV:
-
-logger.addHandler(RichHandler())
-logger.debug("Added RichHandler for debug purpose")
-
-logger.error("Dummy Error")
-logger.debug("Dummy Debug")
-logger.warning("Warning")
-
-logger.info(logger.level)
+    logger.info(f"Logger is ready ! Level : {logger.level}")
+    return app

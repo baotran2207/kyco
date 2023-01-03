@@ -1,4 +1,4 @@
-from chalicelib.events import EventType, subscribe
+from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
 
 

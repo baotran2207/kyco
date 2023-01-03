@@ -25,4 +25,3 @@ def handle_sqs_email(event):
         logger.info(f" in even ! Detail {record} ")
 
 
-logger.info("init sqs_bp")

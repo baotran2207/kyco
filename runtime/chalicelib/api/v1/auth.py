@@ -26,13 +26,13 @@ def register():
 
 
 @auth_routes.route("/login", methods=["POST"])
-def lookup_user():
+def login():
     params = auth_routes.current_app.current_request.json_body
 
     logging_user = UserSignIn(**params)
 
     reponse = login(logging_user, authenticator)
-    return reponse.dict()
+    return reponse
 
 
 @auth_routes.route("/resend_confirmation", methods=["POST"])

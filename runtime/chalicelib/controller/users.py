@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from botocore.exceptions import ClientError
-from chalicelib.events import EventType, post_event
+from chalicelib.events.base import EventType, post_event
 from chalicelib.logger_app import logger
 from chalicelib.schemas import UserCreate, UserSignIn
 from chalicelib.services.authorizers import Authenticator

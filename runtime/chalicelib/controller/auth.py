@@ -1,4 +1,4 @@
-from chalicelib.events import EventType, post_event
+from chalicelib.events.base import EventType, post_event
 from chalicelib.schemas import UserSignIn
 from chalicelib.services.authorizers import Authenticator
 from chalicelib.services.authorizers import authenticator as cog_authenticator

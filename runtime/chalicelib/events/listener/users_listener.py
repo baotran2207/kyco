@@ -1,5 +1,5 @@
 from chalicelib.db.session import SessionLocal
-from chalicelib.events import EventType, subscribe
+from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
 from chalicelib.models import User
 from chalicelib.schemas.user import UserCreate
