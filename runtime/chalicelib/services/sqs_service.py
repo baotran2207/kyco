@@ -7,7 +7,7 @@ sqs = boto3.resource("sqs")
 # snippet-end:[python.example_code.sqs.message_wrapper_imports]
 
 
-def get_queue(name):
+def get_queue(name: str):
     """
     Gets an SQS queue by name.
     :param name: The name that was used to create the queue.
@@ -104,4 +104,8 @@ def delete_message(message):
         raise error
 
 
-sqs_generic = get_queue(settings.SQS_GENERIC)
+sqs_generic = get_queue(
+    settings.SQS_GENERIC
+    if "arn:aws:sqs" not in settings.SQS_GENERIC
+    else settings.SQS_GENERIC.split(":")[-1]
+)

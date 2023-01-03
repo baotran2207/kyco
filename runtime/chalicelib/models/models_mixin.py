@@ -18,6 +18,10 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), default=func.now())
     lastchanged_at = Column(DateTime(timezone=True), onupdate=func.now())
 
+    # used_token = relationship(
+    #     "UsedToken", back_populates="user", cascade="all, delete, delete-orphan"
+    # )
+
 
 class UsedToken(Base):
     id = Column(String, primary_key=True, index=True, default=uuid_lib.uuid4)

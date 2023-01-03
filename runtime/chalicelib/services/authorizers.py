@@ -3,7 +3,7 @@ from typing import Protocol
 
 import boto3
 from botocore.exceptions import ClientError
-from chalice import ChaliceUnhandledError, CognitoUserPoolAuthorizer, ConflictError
+from chalice import ChaliceUnhandledError, CognitoUserPoolAuthorizer, ConflictError, BadRequestError
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
 from chalicelib.schemas import UserBase, UserCreate, UserLoginResponse, UserSignIn
@@ -148,13 +148,21 @@ class CognitoAuth:
             return True
 
     def sign_in(self, user: UserSignIn):
-        response = cognito_client.initiate_auth(
-            ClientId=self.app_client_id,
-            AuthFlow="USER_PASSWORD_AUTH",
-            AuthParameters={"USERNAME": user.email, "PASSWORD": user.password},
-        )
-        res = response["AuthenticationResult"]
-        return UserLoginResponse(**res)
+        try:
+            response = cognito_client.initiate_auth(
+                ClientId=self.app_client_id,
+                AuthFlow="USER_PASSWORD_AUTH",
+                AuthParameters={"USERNAME": user.email, "PASSWORD": user.password},
+            )
+            res = response["AuthenticationResult"]
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            if err_code == "NotAuthorizedException":
+                return {"message": err_msg}
+
+            logger.info(res_msg)
+        return UserLoginResponse(**res).dict()
 
 
 authenticator = CognitoAuth(
