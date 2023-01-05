@@ -7,7 +7,7 @@ from chalicelib.config import settings
 # from chalicelib.events.v1.cron_scheduler import cron_bp
 from chalicelib.events.v1.sqs_events import *
 
-# from chalicelib.events.v1.cognito_events import *
+from chalicelib.events.v1.cognito_events import *
 health_routes = Blueprint(__name__)
 
 
@@ -27,8 +27,8 @@ def init_blueprint(app: Chalice):
     app.register_blueprint(auth_routes, url_prefix="/v1/auth")
     app.register_blueprint(users_blueprints, url_prefix="/v1")
 
-    if settings.ENV == "dev":
-        app.register_blueprint(unname_bp, url_prefix="/dev")
+    # if settings.ENV == "dev":
+    app.register_blueprint(unname_bp, url_prefix="/dev")
 
     # ref:
     #     - https://github.com/aws/chalice/issues/1566
@@ -43,5 +43,5 @@ def init_blueprint(app: Chalice):
 
 events_blueprints = [
     sqs_bp,
-    # cognito_post_config_bp,
+    cognito_post_config_bp,
 ]

@@ -56,7 +56,7 @@ class ChaliceApp(cdk.Stack):
             id=f"{self.PREFIX_ID}-pre-config-user-pool",
             user_pool_arn=self.env_vars.get("COGNITO_USER_POOL_ARN"),
         )
-        print("debug")
+
         # self.user_pool = self._create_cognito()
         # self.cognito_app_client = self.user_pool.add_client(
         #     id=f"{self.PREFIX_ID}-app-client",
@@ -85,7 +85,7 @@ class ChaliceApp(cdk.Stack):
                 | self.env_vars,
             },
         )
-        print("debug 2")
+
         self.chalice_role = self.chalice.get_role("DefaultRole")
 
         self.bucket.grant_read_write(self.chalice_role)
@@ -105,7 +105,6 @@ class ChaliceApp(cdk.Stack):
             self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser"
         )
 
-        print("debug 3")
         # for raw_func_name, lambda_func_name in COGNITO_TRIGGER_HOOKS.items():
         #     print(self.chalice.get_function(function_name=lambda_func_name))
 

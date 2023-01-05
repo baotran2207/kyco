@@ -22,6 +22,7 @@ def authenticated():
 
 @app.route("/")
 def health():
+    logger.info("app is ready!")
     return "Hello there from tranthanhbao2207@gmail.com"
 
 

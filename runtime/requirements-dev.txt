@@ -7,4 +7,6 @@ flake8
 pytest
 alembic
 jinja2
-rich ## for colorful :V
+rich
+python-dotenv
+chalice[cdkv2]
