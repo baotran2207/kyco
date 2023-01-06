@@ -1,18 +1,23 @@
 import random
-
 from chalice import AuthResponse, Blueprint, Chalice
 from chalice.app import Cron, Rate
 from chalicelib.blueprint import events_blueprints, init_blueprint
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.events.base import init_listeners
-from chalicelib.logger_app import init_logger, logger
+from chalicelib.logger_app import logger
 from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
 from chalicelib.services.github_service import update_file
 
-app = Chalice(app_name=settings.PROJECT_NAME)
-init_logger(app)
+app = Chalice(
+    app_name=settings.PROJECT_NAME,
+    configure_logs=False
+)
+
+def create_app():
+    # not supported yet : https://github.com/aws/chalice/issues/1587
+    pass
 
 
 @app.route("/user-pools", methods=["GET"], authorizer=chalice_authorizer)
@@ -35,7 +40,8 @@ init_middlewares(app)
 ############
 # ref:
 #     - https://github.com/aws/chalice/issues/1566
-# Due to bug in blueprint register , we can only register API endpoint, but events and pure function. Let keep those events and pure function here in app.py until the bug is fixed
+# Due to bug in blueprint register , we can only register API endpoint,
+# but events and pure function. Let keep those events and pure function here in app.py until the bug is fixed
 
 
 cron_events = Blueprint(__name__)

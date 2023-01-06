@@ -1,5 +1,4 @@
 from chalicelib.logger_app import logger
-
 from .event_type import EventType
 
 subscribers = dict()

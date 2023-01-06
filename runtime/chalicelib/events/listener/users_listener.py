@@ -5,7 +5,6 @@ from chalicelib.models import User
 from chalicelib.schemas.user import UserCreate
 
 
-# from chalicelib.
 def handle_user_signup_event(user: UserCreate):
     print(f"User registered with email address {user.username}")
     session = SessionLocal()

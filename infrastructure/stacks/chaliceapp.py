@@ -94,7 +94,6 @@ class ChaliceApp(cdk.Stack):
             aws_s3_noti.SqsDestination(self.sqs_generic),
         )
         self.dynamodb_table.grant_read_write_data(self.chalice.get_role("DefaultRole"))
-        # self.parameter_store_config.grant_read(self.chalice.get_role("DefaultRole"))
 
         self.sqs_sendemail.grant_consume_messages(self.chalice.get_role("DefaultRole"))
         self.sqs_sendemail.grant_send_messages(self.chalice.get_role("DefaultRole"))

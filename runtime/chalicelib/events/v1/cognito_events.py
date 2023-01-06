@@ -8,6 +8,11 @@ from chalicelib.logger_app import logger
 
 cognito_post_config_bp = Blueprint(__name__)
 
+"""
+TODO: not in used yet ! still under configuired
+
+"""
+
 @cognito_post_config_bp.lambda_function()
 def pre_sign_up(event, context):
     logger.info("Pre sing up")
