@@ -5,7 +5,7 @@ import aws_cdk.aws_ssm as ssm
 from aws_cdk import Duration
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import (
-    aws_dynamodb as dynamodb,  # aws_sns,; aws_cloudwatch as aws_cw,; aws_iam as iam_,
+    aws_dynamodb as dynamodb,  # aws_sns,;; aws_cloudwatch as aws_cw,;; aws_iam as iam_,
 )
 from aws_cdk import aws_s3
 from aws_cdk import aws_s3_notifications as aws_s3_noti

@@ -4,14 +4,15 @@ ref: https://github.com/awsdocs/aws-doc-sdk-examples/tree/main/python/example_co
 
 import json
 import time
+
 import boto3
 from botocore.exceptions import ClientError
-from chalicelib.logger_app import logger
 from chalicelib.config import settings
-
+from chalicelib.logger_app import logger
 
 MAIN_TOPIC = settings.SNS_MAIN_TOPIC
-# snippet-start:[python.example_code.sns.SnsWrapper]
+
+
 class SnsWrapper:
     """Encapsulates Amazon SNS topic and subscription functions."""
 
@@ -277,7 +278,6 @@ def usage_demo():
     print("Welcome to the Amazon Simple Notification Service (Amazon SNS) demo!")
     print("-" * 88)
     sns_wrapper = SnsWrapper(boto3.resource("sns"))
-
 
     print(f"Creating topic {topic_name}.")
     topic = sns_wrapper.create_topic(topic_name)

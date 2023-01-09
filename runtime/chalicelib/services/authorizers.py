@@ -3,7 +3,12 @@ from typing import Protocol
 
 import boto3
 from botocore.exceptions import ClientError
-from chalice import ChaliceUnhandledError, CognitoUserPoolAuthorizer, ConflictError, BadRequestError
+from chalice import (
+    BadRequestError,
+    ChaliceUnhandledError,
+    CognitoUserPoolAuthorizer,
+    ConflictError,
+)
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
 from chalicelib.schemas import UserBase, UserCreate, UserLoginResponse, UserSignIn

@@ -4,7 +4,9 @@ from chalicelib.db.session import SessionLocal
 from chalicelib.logger_app import logger
 from chalicelib.services.github_service import update_file
 from chalicelib.services.sqs_service import send_message
+
 unname_bp = Blueprint(__name__)
+
 
 @unname_bp.route("/test_sqs", methods=["GET"])
 def test_sqs():

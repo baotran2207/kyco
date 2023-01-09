@@ -42,6 +42,7 @@ class UserSignIn(CustomBaseModel):
             raise ValueError("Phone or email invalid !")
         return username
 
+
 class UserCreate(CustomBaseModel):
     email: Optional[EmailStr]
     phone: Optional[str]
@@ -100,9 +101,6 @@ class Token(CustomBaseModel):
 
 class TokenPayload(CustomBaseModel):
     sub: Optional[list]
-
-
-
 
 
 class UserLoginResponse(CustomBaseModel):

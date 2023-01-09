@@ -1,7 +1,11 @@
 from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
-from chalicelib.services.sqs_service import send_email_queue, parse_dict_to_sqs_message_attrs
 from chalicelib.schemas.messages import SQSMESSAGE
+from chalicelib.services.sqs_service import (
+    parse_dict_to_sqs_message_attrs,
+    send_email_queue,
+)
+
 
 def handle_user_registered_event(user):
     logger.info(f"Attemp to sync user with sql {user.dict()}")
@@ -22,6 +26,7 @@ def handle_post_user_login_event(user):
     message_attributes = parse_dict_to_sqs_message_attrs(user.dict())
     send_email_queue("handle_post_user_login_event", message_attributes)
     logger.info(f"Send message ")
+
 
 def setup_email_event_handlers():
     subscribe(EventType.POST_USER_REGISTER, handle_user_registered_event)

@@ -13,6 +13,7 @@ TODO: not in used yet ! still under configuired
 
 """
 
+
 @cognito_post_config_bp.lambda_function()
 def pre_sign_up(event, context):
     logger.info("Pre sing up")

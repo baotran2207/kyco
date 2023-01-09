@@ -25,6 +25,7 @@ sqs_bp = Blueprint(__name__)
 
 """
 
+
 @sqs_bp.on_sqs_message(queue_arn=settings.SQS_GENERIC, batch_size=10)
 def handle_sqs_generic(event: SQSEvent):
     for record in event:
@@ -40,6 +41,3 @@ def handle_sqs_email(event: SQSEvent):
         logger.info(f" record: {record.body} ")
         logger.info(f" record dict {record.dict()} ")
         logger.info(f" record dict {record.messageAttributes} ")
-
-
-

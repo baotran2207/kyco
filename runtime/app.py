@@ -1,4 +1,5 @@
 import random
+
 from chalice import AuthResponse, Blueprint, Chalice
 from chalice.app import Cron, Rate
 from chalicelib.blueprint import events_blueprints, init_blueprint
@@ -10,10 +11,8 @@ from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
 from chalicelib.services.github_service import update_file
 
-app = Chalice(
-    app_name=settings.PROJECT_NAME,
-    configure_logs=False
-)
+app = Chalice(app_name=settings.PROJECT_NAME, configure_logs=False)
+
 
 def create_app():
     # not supported yet : https://github.com/aws/chalice/issues/1587
