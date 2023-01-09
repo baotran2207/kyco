@@ -10,3 +10,4 @@ jinja2
 rich
 python-dotenv
 chalice[cdkv2]
+gspread

@@ -21,7 +21,7 @@ users_blueprints = Blueprint(__name__)
 def user_info():
     headers = users_blueprints.current_app.current_request.headers
     print(headers)
-    return "ok"
+    return {"success": "ok"}
 
 
 @users_blueprints.route("/users", methods=["GET"])

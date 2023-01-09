@@ -5,6 +5,6 @@ from chalicelib.services.authorizers import authenticator as cog_authenticator
 
 
 def login(user: UserSignIn, authenticator: Authenticator = cog_authenticator):
-    response = authenticator.sign_in(user)
+    response = authenticator.sign_in(user.username, user.password)
     post_event(EventType.POST_USER_LOGIN, user)
     return response
