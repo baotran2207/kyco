@@ -1,13 +1,16 @@
+from typing import Optional
+
 import boto3
 from botocore.exceptions import ClientError
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
+from chalicelib.schemas.messages import SQSMESSAGE
 
 sqs = boto3.resource("sqs")
 # snippet-end:[python.example_code.sqs.message_wrapper_imports]
 
 
-def get_queue(name):
+def get_queue(name: str):
     """
     Gets an SQS queue by name.
     :param name: The name that was used to create the queue.
@@ -24,7 +27,7 @@ def get_queue(name):
 
 
 # snippet-start:[python.example_code.sqs.SendMessage]
-def send_message(queue, message_body, message_attributes=None):
+def send_message(queue, message_body: str, message_attributes: Optional[dict] = None):
     """
     Send a message to an Amazon SQS queue.
     :param queue: The queue that receives the message.
@@ -35,7 +38,6 @@ def send_message(queue, message_body, message_attributes=None):
     """
     if not message_attributes:
         message_attributes = {}
-
     try:
         response = queue.send_message(
             MessageBody=message_body, MessageAttributes=message_attributes
@@ -104,4 +106,17 @@ def delete_message(message):
         raise error
 
 
-sqs_generic = get_queue(settings.SQS_GENERIC)
+def send_email_queue(*arg):
+    sqs_email = get_queue(
+        settings.SQS_SENDEMAIL
+        if "arn:aws:sqs" not in settings.SQS_SENDEMAIL
+        else settings.SQS_SENDEMAIL.split(":")[-1]
+    )
+    return send_message(sqs_email, *arg)
+
+
+def parse_dict_to_sqs_message_attrs(dict_: dict) -> dict:
+    return {
+        key: {"StringValue": str(val), "DataType": "String"}
+        for key, val in dict_.items()
+    }

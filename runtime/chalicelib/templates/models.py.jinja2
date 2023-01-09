@@ -1,0 +1,336 @@
+from builtins import *
+from future.utils import python_2_unicode_compatible
+
+{%- macro python_type(c) -%}
+{%- if c.enum                     -%} {{python_class_name(c.enum)}}
+{%- elif c.type == 'date'         -%} db.Date
+{%- elif c.type == 'timestamptz'  -%} db.DateTime
+{%- elif c.type == 'timestamptz'  -%} db.DateTime
+{%- elif c.type == 'bool'         -%} db.Boolean
+{%- elif c.pk and c.type=='int'   -%} BigInt
+{%- elif c.type == 'int'          -%} db.Integer
+{%- elif c.type == 'bigint'       -%} BigInt
+{%- elif c.type == 'serial'       -%} db.Integer
+{%- elif c.type == 'bigserial'    -%} BigInt
+{%- elif c.type == 'smallint'     -%} db.SmallInteger
+{%- elif c.type == 'blob'         -%} db.BLOB
+{%- elif c.type == 'bytea'        -%} db.BLOB
+{%- elif c.type == 'real'         -%} db.Float
+{%- elif java_type(c) == 'String' -%} db.{{c.type.upper()}}
+{%- else -%}
+{%do assert(False, ('models.py.jinja2', c))%}
+{%- endif -%}
+{%- endmacro -%}
+
+{#-
+ Simple macro for getting associative table relations without trying
+ to get the names right.
+-#}
+{%- macro table_ties(table) -%}
+  {%- for tie in table.ties -%}
+  {%- set tie_other = tie.other | string %}
+    {{table.name}}_{{tie_other}} = IRelationship(lambda: {{python_class_name(tie_other)}}, secondary=lambda: {{python_class_name(tie.name)}})
+  {%- endfor %} {# /tie #}
+{%- endmacro -%}
+
+{%- macro normal_column_definition(table, c) -%}
+{%- set attr_name = dColumnAliases[table.name].get(c.name, c.name) %}
+    {{attr_name}} = IColumn({{
+python_type(c)
+}}
+    {%- if c.fk -%}
+    , db.ForeignKey('{{table_name(c.fk.table)}}.{{c.fk.ref_id}}', use_alter=True, name='{{fk_name(table, c.name)}}')
+    {%- endif -%}
+    {%- if c.pk -%}, primary_key=True
+    {%- elif not c.nullable or c.type == 'bool' or 'ui_required' in c.tags -%}, nullable=False
+    {%- endif -%}
+    {%- if c.unique and c.name != 'id' -%}, unique=True {%- endif -%}
+, name='{{c.db_name}}') {#- /IColumn -#}
+    {%- if c.fk and c.name.endswith('_id') %}
+    {%- set rel_name = '{}{}'.format(
+        '_' if c.name[:-3] in dColumns[table.name] else '', attr_name[:-3])
+        if c.db_name != Tags.CLOSURE_TABLE.get(table.name)
+        else 'parent'
+    %}
+    {{rel_name}} = IRelationship(lambda: {{python_class_name(c.fk.table)}}, foreign_keys=[{{attr_name}}]
+    {%- do assert(('_'+c.name[:-3]) not in dColumns[table.name], 'Relationship attribute name {}.{} conflicts with a column with the same name'.format(table.name, c.name[:-3])) -%}
+    {%- if c.fk.table == table.name -%}
+    , remote_side=[{{c.fk.ref_id}}]
+    {%- endif -%})
+    {%- endif -%}
+{%- endmacro -%}
+
+# -*- encoding: utf-8 -*-
+# NOTE: This file is generated. Do not edit.
+
+from collections import namedtuple
+from repoze.lru import lru_cache
+from sqlalchemy import and_, func, or_
+from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import *
+from sqlalchemy.sql import *
+from sqlalchemy import event
+from sqlalchemy.orm import mapper
+import re
+import ujson
+
+{%- for table in Tables %}
+class {{python_class_name(table.name)}}Mixin: pass
+{%- endfor %}
+
+
+{%- macro table_block(table, blocks) %}
+{%- for c,b in blocks.value.items() %}
+  {%- if b.type == 'block' %}
+    __{{c}} = Header(u'{{c}}')
+    {{table_block(table, b)}}
+
+  {%- elif b.type == 'string' and c in dTableTies[table.name] %}
+    {%- for tie in table.ties if tie.relation_name == c %}
+    {{tie.relation_name}} = IRelationship(lambda: {{
+      python_class_name(tie_other(tie.name, table.name))
+    }}, secondary=lambda: {{
+      python_class_name(tie.name)
+    }}, uselist=True)
+    {%- endfor %} {# /tie.relation_name == c #}
+
+  {%- elif b.type == 'string' and c not in dTableTies[table.name] and b.value.startswith('backref') %}
+    {%- set br = get_backref(table, c, b) %}
+    {%- set ref_table = python_class_name(br.ref_table) %}
+    {{c}} = IRelationship(lambda: {{ref_table}}, foreign_keys=lambda: [{{ref_table}}.{{br.ref_id}}], uselist=True)
+
+  {%- elif b.type == 'string' and c not in dTableTies[table.name] and b.value.startswith('custom') %}
+    {#- Skip custom views entirely here #}
+  {%- elif b.type == 'string' and c not in dTableTies[table.name] %}
+    {{normal_column_definition(table, dColumns[table.name][c])}}
+
+  {%- else %}
+    {%do assert(False, (b,c))%}
+  {%- endif %}
+{%- endfor %} {# /b,c #}
+{%- endmacro %}
+
+{%- macro plain_attributes(table, with_collections=False, with_derived=False) %}
+    {%- for col in table.all_columns -%}
+      {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) -%}
+      {{'' if loop.first else ', '}}'{{attr_name}}'
+    {%- endfor -%}
+
+    {%- if 'HISTORIZED' in table.tags -%}
+      , 'f_version', 'f_changed', 'f_changedby', 'deleted'
+    {%- endif -%}
+
+  {%- if with_derived %}
+    , 'id__name'
+    {%- for col in table.all_columns if col.fk -%}
+        {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) -%}
+        , '{{attr_name}}__name'
+    {%- endfor -%} {#- /col -#}
+
+    {%- for attr in table.virtual_attributes -%}
+        , '{{attr.name}}'
+    {%- endfor -%}
+  {%- endif %} {# /with_derived #}
+
+  {%- if with_collections %}
+    {%- for backref in table.backrefs -%}
+        , '{{backref.attribute}}'
+    {%- endfor -%}
+
+    {%- for tie in table.ties -%}
+        , '{{tie.relation_name}}'
+    {%- endfor -%}
+  {%- endif %} {# /with_collections #}
+
+{%- endmacro %}
+
+{%- for table in Tables if 'API' in table.tags %}
+{%- set CLS = '{}Plain'.format(python_class_name(table.name)) %}
+__{{CLS}}_slots_without_collections__ = ({{plain_attributes(table, with_collections=False, with_derived=True)}})
+class {{CLS}}(object):
+    __slots__ = ({{plain_attributes(table, with_collections=True, with_derived=True)}}, '__baseclass__')
+
+    def __init__(self, db_obj):
+        for attr in __{{CLS}}_slots_without_collections__:
+            setattr(self, attr, getattr(db_obj, attr, None))
+        {%- for col in table.attributes if col.name.endswith('_json') %}
+        self.{{col.name}} = None if db_obj.{{col.name}} is None else ujson.loads(db_obj.{{col.name}})
+        {%- endfor %}
+
+    def __getstate__(self):
+        return tuple(getattr(self, x) for x in __{{CLS}}_slots_without_collections__)
+
+    def __setstate__(self, state):
+        assert len(state) == len(__{{CLS}}_slots_without_collections__)
+        for i in range(len(__{{CLS}}_slots_without_collections__)):
+            setattr(self, __{{CLS}}_slots_without_collections__[i], state[i])
+
+{%- endfor %} {# /table #}
+
+
+
+
+{%- for table in Tables
+      if table.name != 'F_list'
+      and table.name not in Tags.NO_PK
+      and table.name not in Tags.IS_ATTR_LOG
+%}
+{{python_class_name(table.name)}}Tuple = namedtuple('{{python_class_name(table.name)}}Tuple',  ({{plain_attributes(table, with_collections=False, with_derived=False)}}))
+
+class {{python_class_name(table.name)}}(
+{%- if table.name in Tags.API -%}API, {%- endif -%}
+{%- if table.name in Tags.CLOSURE_TABLE -%}ClosureTableMixin, {%- endif -%}
+{{python_class_name(table.name)}}Mixin, {#
+#}{{'Base, ' if table.name in Tags.HISTORIZED else ''}}{#
+#}db.Model{#
+#}):
+    __tablename__ = '{{table_name(table.name)}}'
+    __entity_name__ = '{{table.name}}'
+
+    {%- if 'API' in table.tags %}
+    __plain_object__ = {{python_class_name(table.name)}}Plain
+    {%- endif %}
+    __parent_entity__ = None
+
+  {%- for c in table.pk %}
+    {{normal_column_definition(table, c)}}
+  {%- endfor %} {# /c #}
+    {{table_block(table, table.blocks)}}
+{#    {{table_ties(table)}} #}
+
+    def to_named_tuple(self):
+        return {{python_class_name(table.name)}}Tuple({%- for col in table.all_columns %}
+          {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) -%}
+          {{attr_name}}=self.{{attr_name}},
+       {%- endfor %}
+       {%- if 'HISTORIZED' in table.tags -%}
+         {%- for c in 'f_version f_changed f_changedby deleted'.split() -%}
+           {{c}}=self.{{c}},
+         {%- endfor -%}
+       {%- endif -%})
+
+    def to_plain_object(self):
+        return {{python_class_name(table.name)}}Tuple({%- for col in table.all_columns %}
+          {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) -%}
+          {{attr_name}}=self.{{attr_name}},
+       {%- endfor %}
+       {%- if 'HISTORIZED' in table.tags -%}
+         {%- for c in 'f_version f_changed f_changedby deleted'.split() -%}
+           {{c}}=self.{{c}},
+         {%- endfor -%}
+       {%- endif -%})
+
+{% endfor %} {# /table #}
+
+{%- for table in Tables if 'API' in table.tags %}
+{{python_class_name(table.name)}}Plain.__baseclass__ = {{python_class_name(table.name)}}
+{%- endfor %} {# /table #}
+
+{%- for table in Tables if Tags.ATTR_LOG.get(table.name) %}
+  {%- set parent_ref_col = Tags.ATTR_LOG[table.name] %}
+  {%- set x = dColumns[table.name][parent_ref_col].fk.table %}
+{{python_class_name(table.name)}}.__parent_entity__ = {{python_class_name(x)}}
+{%- endfor %} {# /table #}
+
+{%- for table in Tables if Tags.CLOSURE_TABLE.get(table.name) %}
+{{python_class_name(table.name)}}CtAll.__parent_entity__ = {{python_class_name(table.name)}}
+{%- endfor %} {# /table #}
+
+{%- for tie in Ties %}
+{{python_class_name(tie.name)}} = db.Table('{{tie.name.upper()}}', db.Model.metadata,
+  {%- for fk in tie.fks %}
+    IColumn('{{fk.name.lower()}}_id', BigInt, db.ForeignKey({{python_class_name(fk.table)}}.{{fk.ref_id}}), primary_key=True),
+  {%- endfor %} {# /fk #}
+)
+{%- endfor %} {# /tie #}
+
+# SQLAlchemy Mapper events - kind of similar to SQL triggers
+# Right now we are only working with tie table insert and delete events
+{%- for table in Tables %}
+{%- for tie in table.ties %}
+{%- for mode in ['append', 'remove'] %}
+
+@db.event.listens_for({{python_class_name(table.name)}}.{{tie.relation_name}}, '{{mode}}')
+def receive_after_{{mode}}(target, value, initiator):
+    import datamaster.audit_log as audit_log
+    # The "local_entity" is the target table class, in this case it is {{table.name}}
+    # The "remove_entity" is the foreign relationship table, in this case it is {{tie_other(tie.name, table.name)}}
+    local_entity = '{{table.name}}'
+    local_id = target.id
+    remote_entity = '{{tie_other(tie.name, table.name)}}'
+    remote_id = value.id
+
+    {%- if mode == 'append' %}
+    audit_log.create_tie_audit_log('{{tie.name}}', 'CREATE', local_entity, remote_entity, local_id, remote_id)
+    {%- elif mode == 'remove' %}
+    audit_log.create_tie_audit_log('{{tie.name}}', 'DELETE', local_entity, remote_entity, local_id, remote_id)
+    {%- endif %} {# mode == 'append', mode == 'remove' #}
+
+{%- endfor %} {# for mode in ['append', 'remove'] #}
+{%- endfor %} {# for tie in table.ties #}
+{%- endfor %} {# for table in Tables #}
+
+{%- macro mapper(reverse, fks=False) -%}
+{
+  {%- for table in Tables if 'API' in table.tags %}
+    {%- set cls = python_class_name(table.name) %}
+    {{cls}} : {
+    {%- for col in table.all_columns %}
+        {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) %}
+        {%- if reverse %}
+        '{{attr_name}}': '{{col.db_name}}',
+        {%- else %}
+        '{{col.db_name}}': '{{attr_name}}',
+        {%- endif %}
+    {%- endfor %} {# /col #}
+    {%- if 'HISTORIZED' in table.tags %}
+    'f_version': 'f_version',
+    'f_changed': 'f_changed',
+    'f_changedby': 'f_changedby',
+    'deleted': 'deleted',
+    {%- endif %}
+    },
+  {%- endfor %} {# /table #}
+}
+{%- endmacro %}
+
+ForeignKey = namedtuple('ForeignKey', 'table ref_id name')
+{%- macro mapper_fks() -%}
+{
+  {%- for table in Tables if 'API' in table.tags %}
+    '{{table.name}}' : {
+    {%- for col in table.all_columns if col.fk %}
+        {%- set attr_name = dColumnAliases[table.name].get(col.name, col.name) %}
+        '{{attr_name}}': ForeignKey('{{col.fk.table}}', '{{col.fk.ref_id}}', '{{col.fk.name}}'),
+    {%- endfor %} {# /col #}
+    },
+  {%- endfor %} {# /table #}
+}
+{%- endmacro %}
+
+db_to_mapper = {{mapper(False)}}
+mapper_to_db = {{mapper(True)}}
+fk_attributes = {{mapper_fks()}}
+name_to_class = {
+{%- for table in Tables if 'API' in table.tags %}
+    '{{table.name}}': {{python_class_name(table.name)}},
+{%- endfor %}
+}
+
+def get_column_aliases(cls):
+    return db_to_mapper[cls], mapper_to_db[cls]
+
+def get_aliased_columns(cls, request_json):
+    "Return a dict of 'real' column names from aliased ones from request.json"
+    return {mapper_to_db[cls][k]: v for k,v in request_json.items()}
+
+TaggedClasses = {
+{%- for tag in Tags %}
+  '{{tag}}' : [
+  {%- for table in Tags[tag] if table in Tags.API or table in Tags.TIE or table in Tags.IS_CLOSURE_TABLE %}
+    {{python_class_name(table)}},
+  {%- endfor %}
+  ],
+{%- endfor %}
+}

@@ -1,4 +1,5 @@
 mypy
+pre-commit
 black
 isort
 autoflake
@@ -6,3 +7,6 @@ flake8
 pytest
 alembic
 jinja2
+rich
+python-dotenv
+chalice[cdkv2]

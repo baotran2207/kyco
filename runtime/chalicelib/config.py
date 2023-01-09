@@ -1,12 +1,18 @@
 import json
+import logging
 import os
 from typing import Any, Dict, Optional
 
 import boto3
-from dotenv import load_dotenv
+from chalicelib.enums import AppEnv
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
 
-load_dotenv("../.dev")
+ENV = os.environ.get("ENV", "dev")
+
+if ENV == "dev":
+    from dotenv import load_dotenv
+
+    load_dotenv("../.dev")
 
 
 def get_ssm_object(name) -> dict:
@@ -16,8 +22,8 @@ def get_ssm_object(name) -> dict:
 
 
 class AppSettings(BaseSettings):
-    ENV: str = os.environ.get("ENV")
-
+    PROJECT_NAME: str = os.environ.get("PROJECT_NAME", "kyco")
+    ENV: str = os.environ["ENV"]
     # Init User
     WEBMASTER_EMAIL: str = os.environ.get(
         "WEBMASTER_EMAIL", "tranthanhbao2207@gmail.com"
@@ -49,9 +55,12 @@ class AppSettings(BaseSettings):
     # redis
     REDIS_URL = os.environ.get("REDIS_URL", "")
     # Security
-    COGNITO_USER_POOL = os.environ.get("COGNITO_USER_POOL")
-    COGNITO_USER_POOL_ID = COGNITO_USER_POOL and COGNITO_USER_POOL.split("/")[-1]
-    COGNITO_APP_CLIENT_ID = os.environ.get("COGNITO_APP_CLIENT_ID")
+    COGNITO_USER_POOL_NAME: str = os.environ.get("COGNITO_USER_POOL_NAME", "")
+    COGNITO_USER_POOL_ARN: str = os.environ.get("COGNITO_USER_POOL_ARN", "")
+    COGNITO_USER_POOL_ID: str = (
+        COGNITO_USER_POOL_ARN and COGNITO_USER_POOL_ARN.split("/")[-1] or ""
+    )
+    COGNITO_APP_CLIENT_ID: str = os.environ.get("COGNITO_APP_CLIENT_ID", "")
     secret_key: SecretStr = os.environ.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
 
@@ -79,11 +88,47 @@ class AppSettings(BaseSettings):
     S3_MAIN_BUCKET: str = os.environ.get("S3_MAIN_BUCKET", "")
     # SQS
     SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
+    SQS_GENERIC_NAME: Optional[str] = os.environ.get("SQS_GENERIC_NAME")
+
+    @validator("SQS_GENERIC_NAME", pre=False)
+    def set_sqs_generic_name(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(val, str):
+            return val
+
+        sqs_name = values.get("SQS_GENERIC")
+        return sqs_name and sqs_name.split(":")[-1] or None
+
     SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
     SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
 
+    # SNS
+    SNS_MAIN_TOPIC_ARN: Optional[str] = os.environ.get("SNS_MAIN_TOPIC", "")
+    SNS_MAIN_TOPIC_NAME: Optional[str] = os.environ.get("SNS_MAIN_TOPIC")
+
+    @validator("SNS_MAIN_TOPIC_NAME", pre=False)
+    def set_sns_topic_name(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
+        if isinstance(val, str):
+            return val
+
+        sns_arn = values.get("SNS_MAIN_TOPIC_ARN")
+        return sns_arn and sns_arn.split(":")[-1] or None
+
     # GITHUB
-    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+
+    # logging
+    LOGGING_LEVEL: Optional[str] = None
+
+    @validator("LOGGING_LEVEL", pre=False)
+    def set_logging_level(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
+
+        if isinstance(val, str):
+            return val
+
+        env = values.get("ENV")
+        if env == AppEnv.dev.value:
+            return logging.DEBUG
+        return logging.INFO
 
 
 settings = AppSettings()

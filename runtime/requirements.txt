@@ -9,4 +9,3 @@ PyJWT
 celery
 graphene>=3.1
 PyGithub
-# redis[hiredis]

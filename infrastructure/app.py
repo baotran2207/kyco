@@ -4,12 +4,15 @@ try:
 except ImportError:
     import aws_cdk as cdk
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from stacks.chaliceapp import ChaliceApp
 
 load_dotenv("../.prod")
 
+env_vars = dict(dotenv_values("../.prod"))
+
 app = cdk.App()
-ChaliceApp(app, "BaoTran-Backend")
+
+ChaliceApp(app, "kyco-chalice-id", env_vars=env_vars)
 
 app.synth()
