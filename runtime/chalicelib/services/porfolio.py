@@ -1,36 +1,57 @@
 # from chalicelib.extenions import gc
 from functools import reduce
+from pprint import pprint
 
-from chalicelib.services.binance_api import (
-    get_flexible_savings_balance,
-    get_token_price,
-)
+import requests
+from chalicelib.services.binance_api import bnb_ex
 
 # porfolio_gsheet_url = "https://docs.google.com/spreadsheets/d/1Pbe9OPHhrVdDnjOurrTtSbUbLIHk1LsE_3R6s5pDLSw/edit?pli=1#gid=1375167053"
 # porfolio_sheet = gc.open_by_url(porfolio_gsheet_url)
 
 
-# print(porfolio_sheet.worksheets())
-# summary_sheet = porfolio_sheet.get_worksheet(0)
+def get_p2p_records():
+    p2p_records = bnb_ex.get_p2p_records()
 
-# print(summary_sheet)
+    return p2p_records
 
 
-def get_my_earn_assets(token_names: list):
-    assets = []
-    for token_name in [t.upper() for t in token_names]:
-        earned_assets = get_flexible_savings_balance(token_name)
-        token_price = 1 if "USD" in token_name else get_token_price(token_name)
-        token_amount = earned_assets and earned_assets[0].get("totalAmount") or 0
+def get_p2p_overview():
+    """
+    https://binance-docs.github.io/apidocs/spot/en/#get-c2c-trade-history-user_data
+    binance only return 30 days
+    """
+    p2p_records = bnb_ex.get_p2p_records()
+    return {
+        "records": p2p_records,
+        "total_records": len(p2p_records),
+    }
 
-        asset = {
-            "token_name": token_name,
-            "token_price": token_price,
-            "token_amount": token_amount,
-            "token_value": float(token_amount) * float(token_price),
-        }
-        assets.append(asset)
 
-    total_values = reduce(lambda x, asset: x + asset["token_value"], assets, 0)
+def get_saving_accounts_overview():
+    return bnb_ex.get_saving_accounts_overview()
 
-    return {"total_values": total_values, "assets": assets}
+
+def get_token_price(token_pairs):
+    return bnb_ex.get_tokens_price(token_pairs)
+
+
+def get_p2p_pricing():
+    data = {
+        "asset": "USDT",
+        "fiat": "VND",
+        "merchantCheck": True,
+        "page": 1,
+        "payTypes": ["BANK"],
+        "publisherType": None,
+        "rows": 5,
+        "tradeType": "BUY",
+    }
+    r = requests.post(
+        "https://p2p.binance.com/bapi/c2c/v2/friendly/c2c/adv/search",
+        # headers=headers,
+        json=data,
+    )
+    raw = r.json()
+    data = raw.get("data")
+    first_pricing = data[0]["adv"].get("price")
+    return first_pricing

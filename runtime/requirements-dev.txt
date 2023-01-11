@@ -11,3 +11,4 @@ rich
 python-dotenv
 chalice[cdkv2]
 gspread
+binance-connector

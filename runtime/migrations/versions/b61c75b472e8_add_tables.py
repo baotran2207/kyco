@@ -1,8 +1,8 @@
-"""should be no migration
+"""Add tables
 
-Revision ID: dd80316b63ab
-Revises: d04708803b55
-Create Date: 2022-10-12 08:57:25.531518
+Revision ID: b61c75b472e8
+Revises: fcc5a91b7644
+Create Date: 2023-01-10 12:02:34.833459
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'dd80316b63ab'
-down_revision = 'd04708803b55'
+revision = 'b61c75b472e8'
+down_revision = 'fcc5a91b7644'
 branch_labels = None
 depends_on = None
 
@@ -27,6 +27,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_usedtoken_id'), 'usedtoken', ['id'], unique=False)
     op.create_table('user',
     sa.Column('id', sa.String(), nullable=False),
+    sa.Column('cognito_id', sa.String(), nullable=True),
     sa.Column('email', sa.String(), nullable=True),
     sa.Column('phone', sa.String(), nullable=True),
     sa.Column('full_name', sa.String(), nullable=True),
@@ -37,6 +38,7 @@ def upgrade() -> None:
     sa.Column('lastchanged_at', sa.DateTime(timezone=True), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_user_cognito_id'), 'user', ['cognito_id'], unique=False)
     op.create_index(op.f('ix_user_email'), 'user', ['email'], unique=False)
     op.create_index(op.f('ix_user_full_name'), 'user', ['full_name'], unique=False)
     op.create_index(op.f('ix_user_id'), 'user', ['id'], unique=False)
@@ -50,6 +52,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_user_id'), table_name='user')
     op.drop_index(op.f('ix_user_full_name'), table_name='user')
     op.drop_index(op.f('ix_user_email'), table_name='user')
+    op.drop_index(op.f('ix_user_cognito_id'), table_name='user')
     op.drop_table('user')
     op.drop_index(op.f('ix_usedtoken_id'), table_name='usedtoken')
     op.drop_table('usedtoken')
