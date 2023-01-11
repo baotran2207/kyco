@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kyco"
 version = "0.1.0"
-description = ""
+description = "Currently this file is only for local development.Waiting for migration chalice author(aws)"
 authors = ["Bao Tran <tranthanhbao2207@gmail.com>"]
 readme = "README.md"
 

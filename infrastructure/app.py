@@ -6,6 +6,7 @@ except ImportError:
 
 from dotenv import dotenv_values, load_dotenv
 from stacks.chaliceapp import ChaliceApp
+from stacks.ui import ReactApp
 
 load_dotenv("../.prod")
 
@@ -14,5 +15,6 @@ env_vars = dict(dotenv_values("../.prod"))
 app = cdk.App()
 
 ChaliceApp(app, "kyco-chalice-id", env_vars=env_vars)
+ReactApp(app, "kyco-ui-id", env_vars=env_vars)
 
 app.synth()

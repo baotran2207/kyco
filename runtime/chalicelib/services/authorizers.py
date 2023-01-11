@@ -34,7 +34,7 @@ class Authenticator(Protocol):
     def confirm_user_admin_sign_up(self, user: UserCreate):
         pass
 
-    def sign_in(self, user: UserSignIn) -> UserLoginResponse:
+    def sign_in(self, username, password) -> UserLoginResponse:
         pass
 
     def _secret_hash(self, user_name) -> str:
@@ -152,12 +152,12 @@ class CognitoAuth:
         else:
             return True
 
-    def sign_in(self, user: UserSignIn):
+    def sign_in(self, username: str, password: str):
         try:
             response = cognito_client.initiate_auth(
                 ClientId=self.app_client_id,
                 AuthFlow="USER_PASSWORD_AUTH",
-                AuthParameters={"USERNAME": user.email, "PASSWORD": user.password},
+                AuthParameters={"USERNAME": username, "PASSWORD": password},
             )
             res = response["AuthenticationResult"]
         except ClientError as err:
@@ -167,6 +167,7 @@ class CognitoAuth:
                 return {"message": err_msg}
 
             logger.info(res_msg)
+
         return UserLoginResponse(**res).dict()
 
 

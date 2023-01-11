@@ -21,13 +21,13 @@ def create_app():
 
 @app.route("/user-pools", methods=["GET"], authorizer=chalice_authorizer)
 def authenticated():
-    return {"success": True}
+    return {"message": "authorized"}
 
 
 @app.route("/")
 def health():
     logger.info("app is ready!")
-    return "Hello there from tranthanhbao2207@gmail.com"
+    return {"message": "Hello there from tranthanhbao2207@gmail.com"}
 
 
 init_listeners()
