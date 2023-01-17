@@ -19,7 +19,7 @@ class UserBase(CustomBaseModel):
 class UserSignIn(CustomBaseModel):
     email: Optional[EmailStr]
     phone: Optional[str]
-    password: str
+    password: Optional[str]
     username: Optional[str]
 
     @validator("password")
@@ -37,17 +37,24 @@ class UserSignIn(CustomBaseModel):
 
     @validator("username", pre=True, always=True)
     def set_username(cls, v, *, values, **kwargs):
-        username = v or values.get("phone") or values.get("email")
+        phone = values.get("phone")
+        email = values.get("email")
+
+        username = v or email or phone
         if not username:
             raise ValueError("Phone or email invalid !")
+
+        if phone and email:
+            logger.info("Both phone and email are valid ! Email is set for username")
         return username
 
 
 class UserCreate(CustomBaseModel):
     email: Optional[EmailStr]
     phone: Optional[str]
-    password: str
+    password: Optional[str]
     username: Optional[str]
+    user_info: Optional[dict]
 
     @validator("password")
     def is_long_enough(cls, value):
@@ -64,9 +71,15 @@ class UserCreate(CustomBaseModel):
 
     @validator("username", pre=True, always=True)
     def set_username(cls, v, *, values, **kwargs):
-        username = v or values.get("phone") or values.get("email")
+        phone = values.get("phone")
+        email = values.get("email")
+
+        username = v or email or phone
         if not username:
             raise ValueError("Phone or email invalid !")
+
+        if phone and email:
+            logger.info("Both phone and email are valid ! Email is set for username")
         return username
 
 
