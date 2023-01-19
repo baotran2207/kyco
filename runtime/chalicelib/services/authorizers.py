@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -67,6 +68,22 @@ class Authenticator(Protocol):
 
 
 @dataclass
+class CognitoAuthFlow:
+    """
+    'SMS_MFA'|'SOFTWARE_TOKEN_MFA'|'SELECT_MFA_TYPE'|
+    'MFA_SETUP'|'PASSWORD_VERIFIER'|'CUSTOM_CHALLENGE'|
+    'DEVICE_SRP_AUTH'|'DEVICE_PASSWORD_VERIFIER'|
+    'ADMIN_NO_SRP_AUTH'|'NEW_PASSWORD_REQUIRED',
+
+    """
+
+    # Normal login : with username and password
+    USER_PASSWORD_AUTH = "USER_PASSWORD_AUTH"
+    # Custom auth lambda: define challenge + create auth + verify auth
+    CUSTOM_CHALLENGE = "CUSTOM_CHALLENGE"
+
+
+@dataclass
 class CognitoAuth:
     cognito_client: boto3.Session
     user_pool_id: str
@@ -93,27 +110,19 @@ class CognitoAuth:
         return user
 
     def sign_up(self, user: UserCreate, is_auto_confirm=False):
+        user_attr = [
+            {"Name": "email", "Value": user.email or ""},
+            {"Name": "phone_number", "Value": user.phone_number or ""},
+        ]
         try:
             sign_up_response = self.cognito_client.sign_up(
                 ClientId=self.app_client_id,
-                Username=user.email,
+                Username=user.username,
                 Password=user.password,
-                UserAttributes=[{"Name": "email", "Value": user.email}],
+                UserAttributes=user_attr,
             )
         except cognito_client.exceptions.UsernameExistsException as e:
             raise ConflictError(f"{e}")
-
-        # if is_auto_confirm:
-        #     confirm_sign_up_response = self.confirm_user_admin_sign_up(user)
-
-        #     user = UserBase(
-        #         uuid=sign_up_response["UserSub"],
-        #         meta_data={
-        #             "UserConfirmed": True,
-        #         },
-        #     )
-
-        #     return user
 
         user = UserBase(
             uuid=sign_up_response["UserSub"],
@@ -135,6 +144,7 @@ class CognitoAuth:
             response = self.cognito_client.resend_confirmation_code(
                 ClientId=self.app_client_id, Username=username
             )
+            logger.debug(response)
             delivery = response["CodeDeliveryDetails"]
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
@@ -167,7 +177,7 @@ class CognitoAuth:
         try:
             response = cognito_client.initiate_auth(
                 ClientId=self.app_client_id,
-                AuthFlow="USER_PASSWORD_AUTH",
+                AuthFlow=CognitoAuthFlow.USER_PASSWORD_AUTH,
                 AuthParameters={"USERNAME": username, "PASSWORD": password},
             )
             res = response["AuthenticationResult"]
@@ -183,7 +193,8 @@ class CognitoAuth:
 
     def init_challenge(self, username):
         """
-        this will send an challange (eg: otp) to username (email | phone)
+        this will send an challenge (eg: otp) to username (email | phone)
+        depend on cognito_events
         """
         try:
             response = self.cognito_client.initiate_auth(
@@ -198,13 +209,16 @@ class CognitoAuth:
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            logger.info(err.response["Error"])
+            logger.exception(err.response["Error"])
             raise BadRequestError(err.response)
 
     def verify_challenge(self, username, challenge_session_id, challenge_answer):
+        """
+        depend on cognito_events
+        """
         try:
             response = self.cognito_client.respond_to_auth_challenge(
-                ChallengeName="CUSTOM_CHALLENGE",
+                ChallengeName=CognitoAuthFlow.CUSTOM_CHALLENGE,
                 ClientId=self.app_client_id,
                 Session=challenge_session_id,
                 ChallengeResponses={
@@ -212,12 +226,15 @@ class CognitoAuth:
                     "USERNAME": username,
                 },
             )
-            logger.debug(response)
-            return response["AuthenticationResult"]
+
+            if "AuthenticationResult" in response:
+                UserLoginResponse(**response["AuthenticationResult"]).dict()
+            raise BadRequestError("challenge_answer is not correct")
+
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            logger.info(err.response["Error"])
+            logger.exception(err.response["Error"])
             raise BadRequestError(err.response)
 
         """respond_to_auth_challenge"""

@@ -6,8 +6,9 @@ import json
 
 from chalice import Blueprint
 from chalicelib.config import settings
-from chalicelib.controller.auth import generate_otp
 from chalicelib.logger_app import logger
+from chalicelib.services.email_sender import send_otp
+from chalicelib.utils import generate_otp
 
 cognito_post_config_bp = Blueprint(__name__)
 
@@ -87,21 +88,24 @@ def pre_custom_message(event, context):
 @cognito_post_config_bp.lambda_function()
 def create_auth_challenge(event, context):
     logger.info("create_auth_challenge")
-    print("origin event :", json.dumps(event))
     # return event
-    otp = generate_otp()
+    otp = str(generate_otp())
     custom_response = {
         "publicChallengeParameters": {
             "publicChallenge": "something",
         },
         "privateChallengeParameters": {
-            "challengeAnswer": "4321",
+            "challengeAnswer": otp,
         },
         "challengeMetadata": "event with otp",
     }
-    print("custom_response create_auth_challenge ")
+    # send_notify
+    email = event["request"]["userAttributes"].get("email")
+    if email:
+        send_otp(email=email, otp_value=otp)
+
     res = event | {"response": custom_response}
-    print("res: ", json.dumps(res))
+
     return res
 
 
@@ -135,9 +139,7 @@ def define_auth_challenge(event, context):
 @cognito_post_config_bp.lambda_function()
 def verify_auth_challenge(event, context):
     logger.info("verify_auth_challenge")
-    print(event)
     expected_answer = event["request"]["privateChallengeParameters"]["challengeAnswer"]
     user_answer = event["request"]["challengeAnswer"]
 
-    custom_response = {"answerCorrect": expected_answer == answer}
-    return event | {"response": custom_response}
+    return event | {"response": {"answerCorrect": expected_answer == user_answer}}
