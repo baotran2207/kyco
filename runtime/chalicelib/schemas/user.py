@@ -16,19 +16,12 @@ class UserBase(CustomBaseModel):
     meta_data: dict
 
 
-class UserSignIn(CustomBaseModel):
+class UserAuth(CustomBaseModel):
     email: Optional[EmailStr]
-    phone: Optional[str]
-    password: Optional[str]
+    phone_number: Optional[str]
     username: Optional[str]
 
-    @validator("password")
-    def is_long_enough(cls, value):
-        if len(value) < 3:
-            raise ValueError("password does not meet the requirements")
-        return value
-
-    @validator("phone")
+    @validator("phone_number")
     def phone_validation(cls, v):
         regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
         if v and not re.search(regex, v, re.I):
@@ -37,50 +30,32 @@ class UserSignIn(CustomBaseModel):
 
     @validator("username", pre=True, always=True)
     def set_username(cls, v, *, values, **kwargs):
-        phone = values.get("phone")
+        phone_number = values.get("phone_number")
         email = values.get("email")
 
-        username = v or email or phone
+        username = v or email or phone_number
         if not username:
-            raise ValueError("Phone or email invalid !")
+            raise ValueError("phone_number or email invalid !")
 
-        if phone and email:
-            logger.info("Both phone and email are valid ! Email is set for username")
+        if phone_number and email:
+            logger.info(
+                "Both phone_number and email are valid ! Email is set for username"
+            )
         return username
 
 
-class UserCreate(CustomBaseModel):
-    email: Optional[EmailStr]
-    phone: Optional[str]
+class UserSignIn(UserAuth):
     password: Optional[str]
-    username: Optional[str]
+
+
+class UserSignInChallenge(UserAuth):
+    challenge_session_id: str
+    challenge_answer: str
+
+
+class UserCreate(UserAuth):
+    password: Optional[str]
     user_info: Optional[dict]
-
-    @validator("password")
-    def is_long_enough(cls, value):
-        if len(value) < 3:
-            raise ValueError("password does not meet the requirements")
-        return value
-
-    @validator("phone")
-    def phone_validation(cls, v):
-        regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
-        if v and not re.search(regex, v, re.I):
-            raise ValueError("Phone Number Invalid.")
-        return v
-
-    @validator("username", pre=True, always=True)
-    def set_username(cls, v, *, values, **kwargs):
-        phone = values.get("phone")
-        email = values.get("email")
-
-        username = v or email or phone
-        if not username:
-            raise ValueError("Phone or email invalid !")
-
-        if phone and email:
-            logger.info("Both phone and email are valid ! Email is set for username")
-        return username
 
 
 class UserUpdate(CustomBaseModel):
@@ -93,7 +68,7 @@ class User(CustomBaseModel):
     lastchanged_at: dt.datetime
     cognito_id: Optional[str]
     email: Optional[EmailStr]
-    phone: Optional[str]
+    phone_number: Optional[str]
     username: Optional[str]
     full_name: Optional[str]
     status: int
@@ -116,10 +91,14 @@ class TokenPayload(CustomBaseModel):
     sub: Optional[list]
 
 
-class UserLoginResponse(CustomBaseModel):
+class CognitoTokenPayload(CustomBaseModel):
     # https://stackoverflow.com/questions/48543948/aws-cognito-whats-the-difference-between-access-and-identity-tokens
     AccessToken: str  # for external services , like aws ...
     ExpiresIn: int
     IdToken: str  # this is token for identity , our application chalice will use this as Authorization: Bearer <token>
     RefreshToken: str
     TokenType: str
+
+
+class UserLoginResponse(CognitoTokenPayload):
+    pass
