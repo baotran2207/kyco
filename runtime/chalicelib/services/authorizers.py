@@ -228,7 +228,7 @@ class CognitoAuth:
             )
 
             if "AuthenticationResult" in response:
-                UserLoginResponse(**response["AuthenticationResult"]).dict()
+                return UserLoginResponse(**response["AuthenticationResult"]).dict()
             raise BadRequestError("challenge_answer is not correct")
 
         except ClientError as err:
