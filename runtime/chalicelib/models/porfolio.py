@@ -16,17 +16,17 @@ class DepositRecords(Base):
     ref:https://c2c.binance.com/en/fiatOrder?tab=1&page=1
     """
 
-    order_number = Column(Integer, primary_key=True, index=True)
+    order_number = Column(String, primary_key=True, index=True)
     order_type = Column(String, index=True)
     asset_type = Column(String)
     fiat_type = Column(String)
     total_price = Column(Float)
     price = Column(Float)  ## real exchange rate
     quantity = Column(Float)
-    exchange_rate = Column(Float)  ## not use
+    exchange_rate = Column(String, default="")  ## not use
     counter_party = Column(String)
     order_status = Column(String)
-    order_created_time = Column(DateTime(timezone=True))
+    created_time = Column(DateTime(timezone=True))
 
     created_at = Column(DateTime(timezone=True), default=func.now())
 

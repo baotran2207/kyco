@@ -39,15 +39,15 @@ class BinanceExchange:
     def get_tokens_price(self, token_pairs: list):
         return client.ticker_price(symbols=token_pairs)
 
-    def get_p2p_records():
-        buy_records = client.c2c_trade_history("BUY", **{"rows": 100})
-        sell_records = client.c2c_trade_history("SELL", **{"rows": 100})
+    def get_p2p_records(self):
+        buy_records = client.c2c_trade_history("BUY", **{"rows": 100})["data"]
+        sell_records = client.c2c_trade_history("SELL", **{"rows": 100})["data"]
 
-        return {
+        return [
             rec
             for rec in buy_records + sell_records
             if rec.get("orderStatus") == OrderStatus.COMPLETED
-        }
+        ]
 
 
 binance_api_key = settings.BINANCE_API_KEY

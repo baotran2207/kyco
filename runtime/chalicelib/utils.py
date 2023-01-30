@@ -20,3 +20,7 @@ def generate_otp():
         OTP += digits[math.floor(random.random() * 10)]
 
     return OTP
+
+
+def to_snake_key(char: str) -> str:
+    return char.replace(" ", "_").lower()
