@@ -173,7 +173,7 @@ class CognitoAuth:
             return True
 
     def sign_in(self, username: str, password: str):
-        print(username, password)
+
         try:
             response = cognito_client.initiate_auth(
                 ClientId=self.app_client_id,

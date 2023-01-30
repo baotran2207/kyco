@@ -141,5 +141,8 @@ def verify_auth_challenge(event, context):
     logger.info("verify_auth_challenge")
     expected_answer = event["request"]["privateChallengeParameters"]["challengeAnswer"]
     user_answer = event["request"]["challengeAnswer"]
+    logger.info(f"user_answer : {user_answer} ! expected_answer : {expected_answer} ! ")
 
-    return event | {"response": {"answerCorrect": expected_answer == user_answer}}
+    return event | {
+        "response": {"answerCorrect": str(expected_answer) == str(user_answer)}
+    }

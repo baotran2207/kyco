@@ -100,3 +100,15 @@ def register():
 
     created_new_user = sign_up(new_user_info)
     return created_new_user.dict()
+
+
+@auth_routes.route("/reset_password", methods=["POST", "GET"])
+def reset_password():
+    params = auth_routes.current_app.current_request.json_body
+    pass
+
+
+@auth_routes.route("/forgot_password", methods=["POST", "GET"])
+def forgot_password():
+    params = auth_routes.current_app.current_request.json_body
+    pass
