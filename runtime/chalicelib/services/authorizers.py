@@ -1,3 +1,4 @@
+import json
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -8,6 +9,7 @@ from chalice import (
     ChaliceUnhandledError,
     CognitoUserPoolAuthorizer,
     ConflictError,
+    UnauthorizedError,
 )
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
@@ -55,6 +57,31 @@ class Authenticator(Protocol):
     def list_users(self):
         pass
 
+    def initiate_auth(self):
+        pass
+
+    def reset_password(self, username):
+        pass
+
+    def forgot_password(self, username):
+        pass
+
+
+@dataclass
+class CognitoAuthFlow:
+    """
+    'SMS_MFA'|'SOFTWARE_TOKEN_MFA'|'SELECT_MFA_TYPE'|
+    'MFA_SETUP'|'PASSWORD_VERIFIER'|'CUSTOM_CHALLENGE'|
+    'DEVICE_SRP_AUTH'|'DEVICE_PASSWORD_VERIFIER'|
+    'ADMIN_NO_SRP_AUTH'|'NEW_PASSWORD_REQUIRED',
+
+    """
+
+    # Normal login : with username and password
+    USER_PASSWORD_AUTH = "USER_PASSWORD_AUTH"
+    # Custom auth lambda: define challenge + create auth + verify auth
+    CUSTOM_CHALLENGE = "CUSTOM_CHALLENGE"
+
 
 @dataclass
 class CognitoAuth:
@@ -77,33 +104,25 @@ class CognitoAuth:
 
     def get_user(self, access_token: str):
         user = self.cognito_client.get_user(
-            ClientId=self.app_client_id,
+            # ClientId=self.app_client_id,
             AccessToken=access_token,
         )
         return user
 
     def sign_up(self, user: UserCreate, is_auto_confirm=False):
+        user_attr = [
+            {"Name": "email", "Value": user.email or ""},
+            {"Name": "phone_number", "Value": user.phone_number or ""},
+        ]
         try:
             sign_up_response = self.cognito_client.sign_up(
                 ClientId=self.app_client_id,
-                Username=user.email,
+                Username=user.username,
                 Password=user.password,
-                UserAttributes=[{"Name": "email", "Value": user.email}],
+                UserAttributes=user_attr,
             )
         except cognito_client.exceptions.UsernameExistsException as e:
             raise ConflictError(f"{e}")
-
-        if is_auto_confirm:
-            confirm_sign_up_response = self.confirm_user_admin_sign_up(user)
-
-            user = UserBase(
-                uuid=sign_up_response["UserSub"],
-                meta_data={
-                    "UserConfirmed": True,
-                },
-            )
-
-            return user
 
         user = UserBase(
             uuid=sign_up_response["UserSub"],
@@ -125,6 +144,7 @@ class CognitoAuth:
             response = self.cognito_client.resend_confirmation_code(
                 ClientId=self.app_client_id, Username=username
             )
+            logger.debug(response)
             delivery = response["CodeDeliveryDetails"]
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
@@ -140,7 +160,7 @@ class CognitoAuth:
         try:
             self.cognito_client.confirm_sign_up(
                 ClientId=self.app_client_id,
-                ConfirmationCode=confirmation_code,
+                ConfirmationCode=str(confirmation_code),
                 Username=username,
             )
         except ClientError as err:
@@ -153,26 +173,83 @@ class CognitoAuth:
             return True
 
     def sign_in(self, username: str, password: str):
+
         try:
             response = cognito_client.initiate_auth(
                 ClientId=self.app_client_id,
-                AuthFlow="USER_PASSWORD_AUTH",
+                AuthFlow=CognitoAuthFlow.USER_PASSWORD_AUTH,
                 AuthParameters={"USERNAME": username, "PASSWORD": password},
             )
             res = response["AuthenticationResult"]
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
+            logger.info(err.response["Error"])
             if err_code == "NotAuthorizedException":
-                return {"message": err_msg}
-
-            logger.info(res_msg)
+                raise UnauthorizedError(err_msg)
+            raise BadRequestError(err.response)
 
         return UserLoginResponse(**res).dict()
 
+    def init_challenge(self, username):
+        """
+        this will send an challenge (eg: otp) to username (email | phone)
+        depend on cognito_events
+        """
+        try:
+            response = self.cognito_client.initiate_auth(
+                AuthFlow="CUSTOM_AUTH",
+                ClientId=self.app_client_id,
+                AuthParameters={
+                    "USERNAME": username,
+                },
+            )
+            return response["Session"]
 
-authenticator = CognitoAuth(
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
+
+    def verify_challenge(self, username, challenge_session_id, challenge_answer):
+        """
+        depend on cognito_events
+        """
+        try:
+            response = self.cognito_client.respond_to_auth_challenge(
+                ChallengeName=CognitoAuthFlow.CUSTOM_CHALLENGE,
+                ClientId=self.app_client_id,
+                Session=challenge_session_id,
+                ChallengeResponses={
+                    "ANSWER": challenge_answer,
+                    "USERNAME": username,
+                },
+            )
+
+            if "AuthenticationResult" in response:
+                return UserLoginResponse(**response["AuthenticationResult"]).dict()
+            raise BadRequestError("challenge_answer is not correct")
+
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
+
+        """respond_to_auth_challenge"""
+
+    def reset_password(self, username):
+        pass
+
+    def forgot_password(self, username):
+        pass
+
+
+cog_authenticator = CognitoAuth(
     cognito_client,
     settings.COGNITO_USER_POOL_ID,
     settings.COGNITO_APP_CLIENT_ID,
 )
+
+authenticator = cog_authenticator

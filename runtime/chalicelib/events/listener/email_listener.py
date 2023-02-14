@@ -1,6 +1,7 @@
 from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
 from chalicelib.schemas.messages import SQSMESSAGE
+from chalicelib.services.email_sender import send_otp
 from chalicelib.services.sqs_service import (
     parse_dict_to_sqs_message_attrs,
     send_email_queue,
@@ -26,6 +27,11 @@ def handle_post_user_login_event(user):
     message_attributes = parse_dict_to_sqs_message_attrs(user.dict())
     send_email_queue("handle_post_user_login_event", message_attributes)
     logger.info(f"Send message ")
+
+
+def handle_send_otp(payload: dict):
+    pass
+    # send sms by
 
 
 def setup_email_event_handlers():

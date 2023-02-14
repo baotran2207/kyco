@@ -7,12 +7,12 @@ from chalicelib.schemas.user import UserCreate
 
 def handle_user_signup_event(user: UserCreate):
     print(f"User registered with email address {user.username}")
-    session = SessionLocal()
-    db_user = session.query(User.email == user.username).first()
-    if db_user is None:
-        new_db_user = User(**user.dict())
-        session.add(new_db_user)
-        session.commit()
+    # session = SessionLocal()
+    # db_user = session.query(User.email == user.username).first()
+    # if db_user is None:
+    # new_db_user = User(**user.dict())
+    # session.add(new_db_user)
+    # session.commit()
     logger.info(f"Attemp to add new user to remote sql db  {user.username}")
 
 

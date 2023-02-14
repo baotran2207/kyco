@@ -5,8 +5,9 @@ import aws_cdk.aws_ssm as ssm
 from aws_cdk import Duration
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import (
-    aws_dynamodb as dynamodb,  # aws_sns,;; aws_cloudwatch as aws_cw,;; aws_iam as iam_,
+    aws_dynamodb as dynamodb,  # aws_ses as ses,; aws_sns,;; aws_cloudwatch as aws_cw,;;
 )
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3
 from aws_cdk import aws_s3_notifications as aws_s3_noti
 from aws_cdk import aws_sqs
@@ -78,6 +79,7 @@ class ChaliceApp(cdk.Stack):
             },
         )
 
+        # grant policies
         self.chalice_role = self.chalice.get_role("DefaultRole")
 
         self.bucket.grant_read_write(self.chalice_role)
@@ -96,6 +98,14 @@ class ChaliceApp(cdk.Stack):
             self.chalice.get_role("DefaultRole"), "cognito-idp:AdminCreateUser"
         )
 
+        # Allow chalice lambda send email with ses
+        self.chalice_role.add_to_principal_policy(
+            iam.PolicyStatement(
+                actions=["ses:SendEmail", "SES:SendRawEmail"],
+                resources=["*"],
+                effect=iam.Effect.ALLOW,
+            )
+        )
         # for raw_func_name, lambda_func_name in COGNITO_TRIGGER_HOOKS.items():
         #     print(self.chalice.get_function(function_name=lambda_func_name))
 

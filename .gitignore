@@ -137,3 +137,5 @@ runtime/.chalice/config.json
 .DS_Store
 .prod
 .dev
+
+static/private
