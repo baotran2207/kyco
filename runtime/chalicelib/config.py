@@ -4,6 +4,8 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
+
+from chalice import CORSConfig
 from chalicelib.enums import AppEnv
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
 
@@ -38,7 +40,6 @@ class AppSettings(BaseSettings):
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
-
         if isinstance(val, str):
             return val
         if not values.get("POSTGRES_SERVER"):
@@ -102,8 +103,8 @@ class AppSettings(BaseSettings):
     SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
 
     # SNS
-    SNS_MAIN_TOPIC_ARN: Optional[str] = os.environ.get("SNS_MAIN_TOPIC", "")
-    SNS_MAIN_TOPIC_NAME: Optional[str] = os.environ.get("SNS_MAIN_TOPIC")
+    SNS_MAIN_TOPIC_ARN: Optional[str] = os.environ.get("SNS_MAIN_TOPIC_ARN")
+    SNS_MAIN_TOPIC_NAME: Optional[str] = os.environ.get("SNS_MAIN_TOPIC_NAME")
 
     @validator("SNS_MAIN_TOPIC_NAME", pre=False)
     def set_sns_topic_name(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
@@ -121,7 +122,6 @@ class AppSettings(BaseSettings):
 
     @validator("LOGGING_LEVEL", pre=False)
     def set_logging_level(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
-
         if isinstance(val, str):
             return val
 
@@ -133,6 +133,15 @@ class AppSettings(BaseSettings):
     # binance
     BINANCE_API_KEY: str = os.environ.get("BINANCE_API_KEY")
     BINANCE_API_SECRET: str = os.environ.get("BINANCE_API_SECRET")
+
+
+cors_config = CORSConfig(
+    allow_origin="*",
+    # allow_headers=["X-Special-Header"],
+    max_age=600,
+    # expose_headers=["X-Special-Header"],
+    allow_credentials=True,
+)
 
 
 settings = AppSettings()

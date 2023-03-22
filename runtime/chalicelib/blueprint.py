@@ -7,6 +7,7 @@ from chalicelib.config import settings
 from chalicelib.events.v1.cognito_events import *
 from chalicelib.events.v1.cron_scheduler import *
 from chalicelib.events.v1.sqs_events import sqs_bp
+from chalicelib.events.v1.sns_events import sns_bp
 
 health_routes = Blueprint(__name__)
 
@@ -42,4 +43,4 @@ def init_blueprint(app: Chalice):
     return app
 
 
-events_blueprints = [sqs_bp, cognito_post_config_bp, cronjob_bp]
+events_blueprints = [sqs_bp, cognito_post_config_bp, cronjob_bp, sns_bp]

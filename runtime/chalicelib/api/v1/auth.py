@@ -21,6 +21,7 @@ auth_routes = Blueprint(__name__)
 @auth_routes.route("/login", methods=["POST"])
 def auth_login():
     params = auth_routes.current_app.current_request.json_body
+    print(params)
     user = UserSignIn(**params)
     reponse = login(user, authenticator)
     return reponse
