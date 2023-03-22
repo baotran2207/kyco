@@ -15,6 +15,6 @@ env_vars = dict(dotenv_values("../.prod"))
 app = cdk.App()
 
 ChaliceApp(app, "kyco-chalice-id", env_vars=env_vars)
-ReactApp(app, "kyco-ui-id", env_vars=env_vars)
+# ReactApp(app, "kyco-ui-id", env_vars=env_vars)
 
 app.synth()

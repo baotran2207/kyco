@@ -11,6 +11,7 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3
 from aws_cdk import aws_s3_notifications as aws_s3_noti
 from aws_cdk import aws_sqs
+from aws_cdk import aws_sns
 
 try:
     from aws_cdk import core as cdk
@@ -51,6 +52,12 @@ class ChaliceApp(cdk.Stack):
             max_receive_count=123,
             queue=self.sqs_generic,
         )
+        self.sns_topic = aws_sns.Topic(
+            self,
+            id=f"{self.PREFIX_ID}-publisher",
+            topic_name=f"{self.PREFIX_NAME}Publisher",
+            display_name=f"{self.PREFIX_NAME}MainPublisher",
+        )
 
         self.imported_user_pool = cognito.UserPool.from_user_pool_arn(
             self,
@@ -70,6 +77,7 @@ class ChaliceApp(cdk.Stack):
                     "S3_MAIN_BUCKET": self.bucket.bucket_name,
                     "SQS_GENERIC": self.sqs_generic.queue_arn,
                     "SQS_SENDEMAIL": self.sqs_sendemail.queue_arn,
+                    "SNS_MAIN_TOPIC_ARN": "Load from env_vars which is .prod",
                     "COGNITO_USER_POOL_NAME": "Load from env_vars which is .prod",
                     "COGNITO_USER_POOL_ARN": "Load from env_vars which is .prod",
                     "COGNITO_APP_CLIENT_ID": "Load from env_vars which is .prod",
@@ -78,10 +86,10 @@ class ChaliceApp(cdk.Stack):
                 | self.env_vars,
             },
         )
-
         # grant policies
         self.chalice_role = self.chalice.get_role("DefaultRole")
 
+        self.sns_topic.grant_publish(self.chalice_role)
         self.bucket.grant_read_write(self.chalice_role)
         self.bucket.add_event_notification(
             aws_s3.EventType.OBJECT_CREATED_PUT,
