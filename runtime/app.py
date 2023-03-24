@@ -48,7 +48,7 @@ init_blueprint(app)
 s3_events = Blueprint(__name__)
 
 
-# TODO: https://aws.github.io/chalice/topics/events.html#s3-events current version does not support existing bucket created via cdk .
+# TODO: cd current version does not support existing bucket created via cdk .
 @s3_events.on_s3_event(
     bucket=settings.S3_MAIN_BUCKET, prefix="users_upload", events=["s3:ObjectCreated:*"]
 )
