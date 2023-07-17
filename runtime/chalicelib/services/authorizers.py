@@ -13,7 +13,13 @@ from chalice import (
 )
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
-from chalicelib.schemas import UserBase, UserCreate, UserLoginResponse, UserSignIn
+from chalicelib.schemas import (
+    UserBase,
+    UserCreate,
+    UserLoginResponse,
+    UserSignIn,
+    AuthorizedUser,
+)
 
 cognito_authorizer = CognitoUserPoolAuthorizer(
     settings.COGNITO_USER_POOL_NAME,
@@ -60,10 +66,13 @@ class Authenticator(Protocol):
     def initiate_auth(self):
         pass
 
-    def reset_password(self, username):
+    def initiate_forgot_password(self):
         pass
 
-    def forgot_password(self, username):
+    def confirm_forgot_password(self, username):
+        pass
+
+    def change_password(self, username):
         pass
 
 
@@ -173,7 +182,6 @@ class CognitoAuth:
             return True
 
     def sign_in(self, username: str, password: str):
-
         try:
             response = cognito_client.initiate_auth(
                 ClientId=self.app_client_id,
@@ -239,11 +247,52 @@ class CognitoAuth:
 
         """respond_to_auth_challenge"""
 
-    def reset_password(self, username):
+    def change_password(self, username):
         pass
 
-    def forgot_password(self, username):
-        pass
+    def initiate_forgot_password(self, username: str):
+        try:
+            response = self.cognito_client.forgot_password(
+                ClientId=self.app_client_id,
+                # SecretHash="string",
+                # UserContextData={"IpAddress": "string", "EncodedData": "string"},
+                Username=username,
+                # AnalyticsMetadata={"AnalyticsEndpointId": "string"},
+                # ClientMetadata={"string": "string"},
+            )
+
+            logger.debug(response)
+            return response
+
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
+
+    def confirm_forgot_password(
+        self, username: str, confirmation_code: str, new_password: str
+    ):
+        try:
+            response = self.cognito_client.confirm_forgot_password(
+                ClientId=self.app_client_id,
+                ConfirmationCode=confirmation_code,
+                Password=new_password,
+                # SecretHash="string",
+                # UserContextData={"IpAddress": "string", "EncodedData": "string"},
+                Username=username,
+                # AnalyticsMetadata={"AnalyticsEndpointId": "string"},
+                # ClientMetadata={"string": "string"},
+            )
+
+            logger.debug(response)
+            return response
+
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
 
 
 cog_authenticator = CognitoAuth(
@@ -253,3 +302,10 @@ cog_authenticator = CognitoAuth(
 )
 
 authenticator = cog_authenticator
+
+
+def get_current_user(current_request):
+    current_user = AuthorizedUser(
+        **current_request.to_dict()["context"]["authorizer"]["claims"]
+    )
+    return current_user

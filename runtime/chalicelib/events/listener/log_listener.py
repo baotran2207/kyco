@@ -3,19 +3,19 @@ from chalicelib.logger_app import logger
 
 
 def handle_user_registered_event(user):
-    logger.info(f"Sending email {user.username}")
+    logger.info(f"Sending email {user}")
 
 
 def handle_user_password_forgotten_event(user):
-    logger.info(f"User with email address {user.username} requested a password reset")
+    logger.info(f"User with email address {user} requested a password reset")
 
 
 def handle_user_upgrade_plan_event(user):
-    logger.info(f"User with email address {user.username} has upgraded their plan")
+    logger.info(f"User with email address {user} has upgraded their plan")
 
 
-def handle_post_user_login_event(user):
-    logger.info(f"User {user.username} logged in successfully ! ")
+def handle_post_user_login_event(payload):
+    logger.info(f"User {payload} logged in successfully ! ")
 
 
 def setup_log_event_handlers():

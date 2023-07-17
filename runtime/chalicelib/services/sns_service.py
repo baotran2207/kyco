@@ -10,22 +10,24 @@ from botocore.exceptions import ClientError
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
 
-MAIN_TOPIC = settings.SNS_MAIN_TOPIC
+MAIN_TOPIC = settings.SNS_MAIN_TOPIC_NAME
+MAIN_TOPIC_ARN = settings.SNS_MAIN_TOPIC_ARN
 
 
 class SnsWrapper:
     """Encapsulates Amazon SNS topic and subscription functions."""
 
-    def __init__(self, sns_resource):
+    def __init__(self, sns_resource, sns_client):
         """
         :param sns_resource: A Boto3 Amazon SNS resource.
         """
         self.sns_resource = sns_resource
+        self.sns_client = sns_client
 
     # snippet-end:[python.example_code.sns.SnsWrapper]
 
     # snippet-start:[python.example_code.sns.CreateTopic]
-    def create_topic(self, name):
+    def create_topic(self, topic_arn):
         """
         Creates a notification topic.
 
@@ -33,10 +35,10 @@ class SnsWrapper:
         :return: The newly created topic.
         """
         try:
-            topic = self.sns_resource.create_topic(Name=name)
-            logger.info("Created topic %s with ARN %s.", name, topic.arn)
+            topic = self.sns_resource.Topic(topic_arn)
+            logger.info("Connected topic ARN %s.", topic_arn)
         except ClientError:
-            logger.exception("Couldn't create topic %s.", name)
+            logger.exception("Couldn't create topic %s.", topic_arn)
             raise
         else:
             return topic
@@ -67,12 +69,7 @@ class SnsWrapper:
         """
         Deletes a topic. All subscriptions to the topic are also deleted.
         """
-        try:
-            topic.delete()
-            logger.info("Deleted topic %s.", topic.arn)
-        except ClientError:
-            logger.exception("Couldn't delete topic %s.", topic.arn)
-            raise
+        ...
 
     # snippet-end:[python.example_code.sns.DeleteTopic]
 
@@ -94,12 +91,22 @@ class SnsWrapper:
         """
         try:
             subscription = topic.subscribe(
-                Protocol=protocol, Endpoint=endpoint, ReturnSubscriptionArn=True
+                Protocol=protocol,
+                Endpoint=endpoint,
+                ReturnSubscriptionArn=True,
             )
-            logger.info("Subscribed %s %s to topic %s.", protocol, endpoint, topic.arn)
+            logger.info(
+                "Subscribed %s %s to topic %s.",
+                protocol,
+                endpoint,
+                topic.arn,
+            )
         except ClientError:
             logger.exception(
-                "Couldn't subscribe %s %s to topic %s.", protocol, endpoint, topic.arn
+                "Couldn't subscribe %s %s to topic %s.",
+                protocol,
+                endpoint,
+                topic.arn,
             )
             raise
         else:
@@ -128,32 +135,27 @@ class SnsWrapper:
         else:
             return subs_iter
 
-    # snippet-end:[python.example_code.sns.ListSubscriptions]
-
-    @staticmethod
-    # snippet-start:[python.example_code.sns.SetSubscriptionAttributes]
-    def add_subscription_filter(subscription, attributes):
+    def list_subscriptions_by_topic(self, topic_arn=None):
         """
-        Adds a filter policy to a subscription. A filter policy is a key and a
-        list of values that are allowed. When a message is published, it must have an
-        attribute that passes the filter or it will not be sent to the subscription.
+        Lists subscriptions for the current account, optionally limited to a
+        specific topic.
 
-        :param subscription: The subscription the filter policy is attached to.
-        :param attributes: A dictionary of key-value pairs that define the filter.
+        :param topic: When specified, only subscriptions to this topic are returned.
+        :return: An iterator that yields the subscriptions.
         """
+
         try:
-            att_policy = {key: [value] for key, value in attributes.items()}
-            subscription.set_attributes(
-                AttributeName="FilterPolicy", AttributeValue=json.dumps(att_policy)
+            subs_iter = self.sns_client.list_subscriptions_by_topic(
+                TopicArn=topic_arn,
             )
-            logger.info("Added filter to subscription %s.", subscription.arn)
+            logger.info("Got endpoints.")
         except ClientError:
-            logger.exception(
-                "Couldn't add filter to subscription %s.", subscription.arn
-            )
+            logger.exception("Couldn't get endpoints.")
             raise
+        else:
+            return subs_iter["Subscriptions"]
 
-    # snippet-end:[python.example_code.sns.SetSubscriptionAttributes]
+    # snippet-end:[python.example_code.sns.ListSubscriptions]
 
     @staticmethod
     # snippet-start:[python.example_code.sns.Unsubscribe]
@@ -220,7 +222,8 @@ class SnsWrapper:
             response = topic.publish(Message=message, MessageAttributes=att_dict)
             message_id = response["MessageId"]
             logger.info(
-                "Published message with attributes %s to topic %s.",
+                "Published message %s with attributes %s to topic %s. ",
+                message,
                 attributes,
                 topic.arn,
             )
@@ -231,6 +234,48 @@ class SnsWrapper:
             return message_id
 
     # snippet-end:[python.example_code.sns.Publish_MessageAttributes]
+
+    def set_subscription_attributes(self, subscription_arn, attributes):
+        """
+        Sets the attributes of a subscription.
+
+        :param subscription_arn: The ARN of the subscription.
+        :param attributes: A dictionary of key-value pairs that define the attributes.
+        """
+        try:
+            self.sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn, AttributeName=attributes
+            )
+            logger.info("Set attributes for subscription %s.", subscription_arn)
+        except ClientError:
+            logger.exception(
+                "Couldn't set attributes for subscription %s.", subscription_arn
+            )
+            raise
+
+    def set_subscription_filter_policy(self, subscription_arn, filter_policy):
+        """
+        Sets the filter policy of a subscription.
+
+        :param subscription_arn: The ARN of the subscription.
+        :param filter_policy: A dictionary of key-value pairs that define the filter.
+        """
+        try:
+            self.sns_client.set_subscription_attributes(
+                SubscriptionArn=subscription_arn,
+                AttributeName="FilterPolicy",
+                AttributeValue=json.dumps(filter_policy),
+            )
+            logger.info(
+                "Set filter policy for subscription {} with {}.".format(
+                    subscription_arn, json.dumps(filter_policy)
+                )
+            )
+        except ClientError:
+            logger.exception(
+                "Couldn't set filter policy for subscription %s.", subscription_arn
+            )
+            raise
 
     @staticmethod
     # snippet-start:[python.example_code.sns.Publish_MessageStructure]
@@ -270,104 +315,16 @@ class SnsWrapper:
             return message_id
 
 
-# snippet-end:[python.example_code.sns.Publish_MessageStructure]
+sns_wrapper = SnsWrapper(boto3.resource("sns"), boto3.client("sns"))
+topic = sns_wrapper.create_topic(MAIN_TOPIC_ARN)
 
 
-def usage_demo():
-    print("-" * 88)
-    print("Welcome to the Amazon Simple Notification Service (Amazon SNS) demo!")
-    print("-" * 88)
-    sns_wrapper = SnsWrapper(boto3.resource("sns"))
-
-    print(f"Creating topic {topic_name}.")
-    topic = sns_wrapper.create_topic(topic_name)
-
-    # phone_number = input(
-    #     "Enter a phone number (in E.164 format) that can receive SMS messages: "
-    # )
-    # if phone_number != "":
-    #     print(f"Sending an SMS message directly from SNS to {phone_number}.")
-    #     sns_wrapper.publish_text_message(phone_number, "Hello from the SNS demo!")
-
-    # email = input(
-    #     f"Enter an email address to subscribe to {topic_name} and receive "
-    #     f"a message: "
-    # )
-
-    # if email != "":
-    #     print(f"Subscribing {email} to {topic_name}.")
-    #     email_sub = sns_wrapper.subscribe(topic, "email", email)
-    #     answer = input(
-    #         f"Confirmation email sent to {email}. To receive SNS messages, "
-    #         f"follow the instructions in the email. When confirmed, press "
-    #         f"Enter to continue."
-    #     )
-    #     while (
-    #         email_sub.attributes["PendingConfirmation"] == "true"
-    #         and answer.lower() != "s"
-    #     ):
-    #         answer = input(
-    #             f"Email address {email} is not confirmed. Follow the "
-    #             f"instructions in the email to confirm and receive SNS messages. "
-    #             f"Press Enter when confirmed or enter 's' to skip. "
-    #         )
-    #         email_sub.reload()
-
-    # phone_sub = None
-    # if phone_number != "":
-    #     print(
-    #         f"Subscribing {phone_number} to {topic_name}. Phone numbers do not "
-    #         f"require confirmation."
-    #     )
-    #     phone_sub = sns_wrapper.subscribe(topic, "sms", phone_number)
-
-    # if phone_number != "" or email != "":
-    #     print(
-    #         f"Publishing a multi-format message to {topic_name}. Multi-format "
-    #         f"messages contain different messages for different kinds of endpoints."
-    #     )
-    #     sns_wrapper.publish_multi_message(
-    #         topic,
-    #         "SNS multi-format demo",
-    #         "This is the default message.",
-    #         "This is the SMS version of the message.",
-    #         "This is the email version of the message.",
-    #     )
-
-    # if phone_sub is not None:
-    #     mobile_key = "mobile"
-    #     friendly = "friendly"
-    #     print(
-    #         f"Adding a filter policy to the {phone_number} subscription to send "
-    #         f"only messages with a '{mobile_key}' attribute of '{friendly}'."
-    #     )
-    #     sns_wrapper.add_subscription_filter(phone_sub, {mobile_key: friendly})
-    #     print(f"Publishing a message with a {mobile_key}: {friendly} attribute.")
-    #     sns_wrapper.publish_message(
-    #         topic, "Hello! This message is mobile friendly.", {mobile_key: friendly}
-    #     )
-    #     not_friendly = "not-friendly"
-    #     print(f"Publishing a message with a {mobile_key}: {not_friendly} attribute.")
-    #     sns_wrapper.publish_message(
-    #         topic,
-    #         "Hey. This message is not mobile friendly, so you shouldn't get "
-    #         "it on your phone.",
-    #         {mobile_key: not_friendly},
-    #     )
-
-    # print(f"Getting subscriptions to {topic_name}.")
-    # topic_subs = sns_wrapper.list_subscriptions(topic)
-    # for sub in topic_subs:
-    #     print(f"{sub.arn}")
-
-    # print(f"Deleting subscriptions and {topic_name}.")
-    # for sub in topic_subs:
-    #     if sub.arn != "PendingConfirmation":
-    #         sns_wrapper.delete_subscription(sub)
-    # sns_wrapper.delete_topic(topic)
-
-    # print("Thanks for watching!")
-    # print("-" * 88)
+def publish_message(message: str, attributes: dict):
+    sns_wrapper.publish_message(
+        topic,
+        message,
+        attributes,
+    )
 
 
 if __name__ == "__main__":

@@ -4,6 +4,8 @@ from chalicelib.db.session import SessionLocal
 from chalicelib.logger_app import logger
 from chalicelib.services.github_service import update_file
 from chalicelib.services.sqs_service import send_message
+from chalicelib.events.base import post_event, add_filters_to_lambda_subscribers
+from chalicelib.events.event_type import EventType
 
 # from chalicelib.services.porfolio import summary_sheet
 
@@ -32,7 +34,6 @@ def test_sqs():
 
 @unname_bp.route("/check_db_connection")
 def check_db_connection():
-
     db = SessionLocal()
     query = db.execute("SELECT 1")
     logger.info(f" Connection ok ! Detail {query} ")
@@ -45,3 +46,15 @@ def commit_github():
     filename = "autocommit.txt"
     repo = "baotran2207/til"
     return update_file(filename, "auto commit", repo)
+
+
+@unname_bp.route("/test_post_deploy_update_sns_subscribers")
+def post_deploy_update_sns_subscribers():
+    add_filters_to_lambda_subscribers()
+    return {"message": "ok"}
+
+
+@unname_bp.route("/test_event")
+def post_deploy_update_sns_subscribers():
+    post_event(EventType.POST_USER_REGISTER, {"username": "baotran2207"})
+    return {"message": "ok"}

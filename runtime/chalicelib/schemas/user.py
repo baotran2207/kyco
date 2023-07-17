@@ -3,7 +3,16 @@ import re
 from typing import Optional
 
 from chalicelib.enums import *
-from pydantic import BaseModel, EmailStr, fields, validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    fields,
+    validator,
+    HttpUrl,
+    SecretStr,
+    root_validator,
+)
+from chalicelib.config import settings
 
 
 class CustomBaseModel(BaseModel):
@@ -24,7 +33,7 @@ class UserAuth(CustomBaseModel):
     @validator("phone_number")
     def phone_validation(cls, v):
         regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
-        if v and not re.search(regex, v, re.I):
+        if v and not re.search(settings.PASSWORD_REGEX, v, re.I):
             raise ValueError("Phone Number Invalid.")
         return v
 
@@ -44,6 +53,22 @@ class UserAuth(CustomBaseModel):
         return username
 
 
+class AuthorizedUser(UserAuth):
+    sub: str
+    email_verified: Optional[bool] = False
+    phone_number_verified: Optional[bool] = False
+    token_use: Optional[str]
+    auth_time: Optional[int]
+    exp: Optional[int]
+    iat: Optional[int]
+    attributes: Optional[dict] = {}
+    uuid: Optional[str]
+
+    @validator("uuid", pre=True, always=True)
+    def set_uuid(cls, v, *, values):
+        return values.get("sub")
+
+
 class UserSignIn(UserAuth):
     password: Optional[str]
 
@@ -58,8 +83,25 @@ class UserCreate(UserAuth):
     user_info: Optional[dict]
 
 
-class UserUpdate(CustomBaseModel):
-    password: Optional[str] = None
+class UserResetPassword(CustomBaseModel):
+    username: str
+    old_password: str
+    new_password: str
+    new_password2: str
+
+
+class UserForgotPassword(UserAuth):
+    confirmation_code: str
+    new_password: str
+    new_password2: str
+
+    @root_validator()
+    def validate_atts(cls, values):
+        print(values)
+        if values.get("new_password") != values.get("new_password2"):
+            raise ValueError("Password and confirm password are not matched")
+
+        return values.get("new_password")
 
 
 class User(CustomBaseModel):

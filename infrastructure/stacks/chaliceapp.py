@@ -133,7 +133,7 @@ class ChaliceApp(cdk.Stack):
             ),
             sort_key=dynamodb.Attribute(name="SK", type=dynamodb.AttributeType.STRING),
             stream=dynamodb.StreamViewType.NEW_IMAGE,
-            removal_policy=cdk.RemovalPolicy.DESTROY,
+            billing_mode=dynamodb.BillingMode.PAY_PER_REQUEST,
         )
         cdk.CfnOutput(
             self, f"{self.PREFIX_ID}-table-name", value=dynamodb_table.table_name

@@ -5,9 +5,17 @@ from chalicelib.controller.auth import (
     login,
     login_with_challenge,
     sign_up,
+    initiate_forgot_password,
+    confirm_forgot_password,
 )
 from chalicelib.logger_app import logger
-from chalicelib.schemas import UserAuth, UserCreate, UserSignIn, UserSignInChallenge
+from chalicelib.schemas import (
+    UserAuth,
+    UserCreate,
+    UserSignIn,
+    UserSignInChallenge,
+    UserForgotPassword,
+)
 from chalicelib.services.authorizers import authenticator
 from chalicelib.utils import generate_new_password
 from pydantic import ValidationError
@@ -21,7 +29,6 @@ auth_routes = Blueprint(__name__)
 @auth_routes.route("/login", methods=["POST"])
 def auth_login():
     params = auth_routes.current_app.current_request.json_body
-    print(params)
     user = UserSignIn(**params)
     reponse = login(user, authenticator)
     return reponse
@@ -103,13 +110,41 @@ def register():
     return created_new_user.dict()
 
 
-@auth_routes.route("/reset_password", methods=["POST", "GET"])
+@auth_routes.route("/reset-password", methods=["POST"])
 def reset_password():
     params = auth_routes.current_app.current_request.json_body
     pass
 
 
-@auth_routes.route("/forgot_password", methods=["POST", "GET"])
+@auth_routes.route("/forgot-password", methods=["POST"])
 def forgot_password():
     params = auth_routes.current_app.current_request.json_body
-    pass
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        user = UserAuth(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    verify_code = initiate_forgot_password(user.username)
+
+    logger.debug(verify_code)
+
+    return {"message": "A confirmation code sent to your email"}
+
+
+@auth_routes.route("/confirm-forgot-password", methods=["POST"])
+def route_confirm_forgot_password():
+    params = auth_routes.current_app.current_request.json_body
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        user = UserForgotPassword(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    response = confirm_forgot_password(user.username)
+
+    logger.debug(response)
+
+    return {"message": "A confirmation code sent to your email"}

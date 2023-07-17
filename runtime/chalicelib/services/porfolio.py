@@ -99,7 +99,6 @@ def update_p2p_history_records():
 
 
 def update_bnb_p2p_records():
-
     recent_orders = bnb_ex.get_p2p_records()
     to_update_orders = []
 
@@ -135,7 +134,6 @@ def update_p2p_records(orders: list):
     cols = DepositRecords.__table__.columns.keys()
     added_order_numbers = []
     for order in new_orders:
-
         order_db = DepositRecords(
             order_number=str(order.get("order_number")),
             order_type=order.get("order_type").capitalize(),
@@ -190,4 +188,53 @@ def deposit_overview():
         "total_sell_vnd": sell_capital[2],
         "average_buy_price": int(buy_capital[2] / buy_capital[1]),
         "average_sell_price": int(sell_capital[2] / sell_capital[1]),
+    }
+
+
+def get_funding_overview():
+    current_assets = get_saving_accounts_overview()
+    assets_amount = current_assets["positionAmountVos"]
+    current_assets_usd = float(current_assets["totalAmountInUSDT"])
+
+    current_statable_assets = current_assets["totalAmountInUSDT"]
+    stables_amount = sum(
+        [
+            float(asset.get("amount", 0))
+            for asset in assets_amount
+            if asset["asset"] in ["USDT", "BUSD", "USDC", "DAI"]
+        ]
+    )
+
+    current_usd_price = float(get_p2p_pricing())
+    current_assets_vnd = current_usd_price * current_assets_usd
+
+    deposits = deposit_overview()
+    capital_usd = deposits["capital_usd"]
+    capital_vnd = deposits["capital_vnd"]
+    capital_usd_deployed = capital_usd - stables_amount
+    capital_vnd_deployed = capital_usd_deployed * current_usd_price
+
+    pnl_usd = current_assets_usd / capital_usd
+    pnl_vnd = current_assets_vnd / capital_vnd
+
+    position_pnl_usd = (current_assets_usd - stables_amount) / capital_usd_deployed
+    position_pnl_vnd = (
+        current_assets_vnd - stables_amount * current_usd_price
+    ) / capital_vnd_deployed
+
+    return {
+        "current_amount_in_vnd": current_assets_vnd,
+        "current_amount_in_usd": current_assets_usd,
+        "capital_usd_deployed": capital_usd_deployed,
+        "capital_vnd_deployed": capital_vnd_deployed,
+        "stables_amount": stables_amount,
+        "PNL": {
+            "pnl_in_vnd": f"{pnl_vnd:,.2%}",
+            "pnl_in_usd": f"{pnl_usd:,.2%}",
+            "position_pnl_usd": f"{position_pnl_usd:,.2%}",
+            "position_pnl_vnd": f"{position_pnl_vnd:,.2%}",
+        },
+        "current_usd_price": current_usd_price,
+        "current_assets": current_assets,
+        "deposits": deposits,
     }

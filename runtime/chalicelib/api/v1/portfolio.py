@@ -1,15 +1,19 @@
 from chalice import Blueprint
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.services.email_sender import send_porfolio_overview
+from chalicelib.logger_app import logger
 from chalicelib.services.porfolio import (
     deposit_overview,
     get_p2p_overview,
     get_p2p_pricing,
     get_p2p_records,
-    get_saving_accounts_overview,
+    get_funding_overview,
     get_token_price,
     update_bnb_p2p_records,
     update_p2p_history_records,
+    get_funding_overview,
 )
+import json
 
 porfolio_bp = Blueprint(__name__)
 
@@ -29,29 +33,30 @@ def trigger_update():
 
 
 @porfolio_bp.route("/overview", authorizer=chalice_authorizer)
-def get_funding_overview():
-    current_assets = get_saving_accounts_overview()
-    current_assets_usd = float(current_assets["totalAmountInUSDT"])
-    current_usd_price = float(get_p2p_pricing())
-    current_assets_vnd = current_usd_price * current_assets_usd
+def get_funding_overview_route():
+    funding_overview = get_funding_overview()
 
-    deposits = deposit_overview()
-    capital_usd = deposits["capital_usd"]
-    capital_vnd = deposits["capital_vnd"]
+    position_pnl_usd = float(
+        funding_overview["PNL"]["position_pnl_usd"].replace("%", "")
+    )
 
-    pnl_usd = current_assets_usd / capital_usd
-    pnl_vnd = current_assets_vnd / capital_vnd
-    return {
-        "current_amount_in_vnd": current_assets_vnd,
-        "current_amount_in_usd": current_assets_usd,
-        "PNL": {
-            "pnl_in_vnd": f"{pnl_vnd:,.2%}",
-            "pnl_in_usd": f"{pnl_usd:,.2%}",
-        },
-        "current_usd_price": current_usd_price,
-        "current_assets": current_assets,
-        "deposits": deposits,
-    }
+    link_price = round(float(get_token_price(["LINKUSDT"])[0].get("price")), 1)
+    link_price_breakevent = round(link_price / (position_pnl_usd * 0.01), 1)
+    link_position = funding_overview.get("current_assets").get("positionAmountVos")[0]
+    link_position_value = round(float(link_position.get("amountInUSDT")))
+    link_position_amount = float(link_position.get("amount"))
+
+    response = dict(
+        funding_overview,
+        **{
+            "link_price": link_price,
+            "link_price_breakevent": link_price_breakevent,
+            "link_position_value": link_position_value,
+            "link_position_amount": link_position_amount,
+        }
+    )
+    send_porfolio_overview("tranthanhbao2207@gmail.com", response)
+    return response
 
 
 @porfolio_bp.route("/price/{token_pair}")
