@@ -1,11 +1,11 @@
 from chalice import BadRequestError, Blueprint
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
+from chalicelib.events.base import add_filters_to_lambda_subscribers, post_event
+from chalicelib.events.event_type import EventType
 from chalicelib.logger_app import logger
 from chalicelib.services.github_service import update_file
 from chalicelib.services.sqs_service import send_message
-from chalicelib.events.base import post_event, add_filters_to_lambda_subscribers
-from chalicelib.events.event_type import EventType
 
 # from chalicelib.services.porfolio import summary_sheet
 

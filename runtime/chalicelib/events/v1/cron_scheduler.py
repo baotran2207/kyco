@@ -1,22 +1,23 @@
+import random
+
 from chalice import Blueprint
 from chalice.app import Cron, Rate
+from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.logger_app import logger
-from chalicelib.services.porfolio import update_bnb_p2p_records
-from chalicelib.db.session import SessionLocal
-from chalicelib.services.porfolio import get_funding_overview
 from chalicelib.services.email_sender import send_porfolio_overview
-from chalicelib.config import settings
 from chalicelib.services.github_service import update_file
-import random
+from chalicelib.services.porfolio import (
+    get_funding_overview,
+    get_token_price,
+    update_bnb_p2p_records,
+)
 
 cronjob_bp = Blueprint(__name__)
 
 
 @cronjob_bp.schedule(Cron(0, 18, "?", "*", "MON-FRI", "*"))
 def update_deposit(event):
-    print("update_deposit !")
-    print(event.to_dict())
     res = update_bnb_p2p_records()
     logger.info(f"new order :{res} ")
     return "This should be invoked every weekday at 6pm"
@@ -40,19 +41,8 @@ def auto_commit_cron(event):
         logger.info("No commit !")
 
 
-@cronjob_bp.schedule(Cron(30, 9, "?", "*", "*", "*"))
+@cronjob_bp.schedule(Cron(15, "0,3,5,12", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
-    funding_overview = get_funding_overview()
-    link_price = round(float(get_token_price(["LINKUSDT"])[0].get("price")), 1)
-    position_pnl_usd = float(
-        unding_overview["PNL"]["position_pnl_usd"].replace("%", "")
-    )
-    response = dict(
-        unding_overview,
-        **{
-            "link_price": link_price,
-            "breakevent": round(link_price / (position_pnl_usd * 0.01), 1),
-        },
-    )
+    res = get_funding_overview()
     send_porfolio_overview(settings.WEBMASTER_EMAIL, res)
     logger.info("Sent funding overview !")

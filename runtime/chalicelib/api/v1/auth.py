@@ -1,22 +1,28 @@
 from chalice import BadRequestError, Blueprint
 from chalicelib.config import settings
 from chalicelib.controller.auth import (
+    change_password,
+    confirm_forgot_password,
     init_challenge,
+    initiate_forgot_password,
     login,
     login_with_challenge,
     sign_up,
-    initiate_forgot_password,
-    confirm_forgot_password,
 )
 from chalicelib.logger_app import logger
 from chalicelib.schemas import (
     UserAuth,
+    UserChangePassword,
+    UserConfirmForgotPassword,
     UserCreate,
     UserSignIn,
     UserSignInChallenge,
-    UserForgotPassword,
 )
-from chalicelib.services.authorizers import authenticator
+from chalicelib.services.authorizers import (
+    authenticator,
+    chalice_authorizer,
+    get_current_user,
+)
 from chalicelib.utils import generate_new_password
 from pydantic import ValidationError
 
@@ -110,10 +116,22 @@ def register():
     return created_new_user.dict()
 
 
-@auth_routes.route("/reset-password", methods=["POST"])
-def reset_password():
+@auth_routes.route("/change-password", methods=["POST"], authorizer=chalice_authorizer)
+def route_change_password():
     params = auth_routes.current_app.current_request.json_body
-    pass
+    logger.debug(params)
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        user = UserChangePassword(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    verify_code = change_password(user)
+
+    logger.debug(user)
+
+    return {"message": "password changed succeccfully ! You can login "}
 
 
 @auth_routes.route("/forgot-password", methods=["POST"])
@@ -127,9 +145,6 @@ def forgot_password():
         raise BadRequestError(f"{e}")
 
     verify_code = initiate_forgot_password(user.username)
-
-    logger.debug(verify_code)
-
     return {"message": "A confirmation code sent to your email"}
 
 
@@ -139,12 +154,13 @@ def route_confirm_forgot_password():
     if not params:
         raise BadRequestError(f"missing required information : phone number OR email")
     try:
+        logger.debug(params)
         user = UserForgotPassword(**params)
     except ValidationError as e:
         raise BadRequestError(f"{e}")
 
-    response = confirm_forgot_password(user.username)
+    response = confirm_forgot_password(user)
 
     logger.debug(response)
 
-    return {"message": "A confirmation code sent to your email"}
+    return {"message": "password changed succeccfully ! You can login "}

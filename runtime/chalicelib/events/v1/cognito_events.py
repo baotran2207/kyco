@@ -37,6 +37,7 @@ expample_event = {
 }
 """
 
+
 # sign up
 @cognito_post_config_bp.lambda_function()
 def pre_sign_up(event, context):

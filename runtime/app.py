@@ -1,5 +1,6 @@
-import random
 import json
+import random
+
 from chalice import AuthResponse, Blueprint, Chalice
 from chalice.app import Cron, Rate
 from chalicelib.blueprint import events_blueprints, init_blueprint

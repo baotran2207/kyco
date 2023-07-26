@@ -35,9 +35,14 @@ def handle_sqs_generic(event: SQSEvent):
         print(record.messageAttributes)
 
 
-@sqs_bp.on_sqs_message(queue_arn=settings.SQS_SENDEMAIL, batch_size=1)
+@sqs_bp.on_sqs_message(queue_arn=settings.SQS_SENDEMAIL, batch_size=10)
 def handle_sqs_email(event: SQSEvent):
     for record in event:
         logger.info(f" record: {record.body} ")
         logger.info(f" record dict {record.dict()} ")
         logger.info(f" record dict {record.messageAttributes} ")
+        # ses.send_email(
+        #     Source=SES_FROM_ADDRESS,
+        #     Destination={"ToAddresses": [email]},
+        #     Message=message,
+        # )

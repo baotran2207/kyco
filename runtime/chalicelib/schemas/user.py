@@ -2,17 +2,17 @@ import datetime as dt
 import re
 from typing import Optional
 
+from chalicelib.config import settings
 from chalicelib.enums import *
 from pydantic import (
     BaseModel,
     EmailStr,
-    fields,
-    validator,
     HttpUrl,
     SecretStr,
+    fields,
     root_validator,
+    validator,
 )
-from chalicelib.config import settings
 
 
 class CustomBaseModel(BaseModel):
@@ -83,25 +83,21 @@ class UserCreate(UserAuth):
     user_info: Optional[dict]
 
 
-class UserResetPassword(CustomBaseModel):
-    username: str
-    old_password: str
-    new_password: str
-    new_password2: str
-
-
-class UserForgotPassword(UserAuth):
+class UserConfirmForgotPassword(UserAuth):
     confirmation_code: str
     new_password: str
     new_password2: str
 
-    @root_validator()
-    def validate_atts(cls, values):
-        print(values)
-        if values.get("new_password") != values.get("new_password2"):
-            raise ValueError("Password and confirm password are not matched")
 
-        return values.get("new_password")
+class UserChangePassword(BaseModel):
+    access_token: str
+    old_password: str
+    new_password: str
+
+
+class UserAdminChangePassword(UserAuth):
+    old_password: str
+    new_password: str
 
 
 class User(CustomBaseModel):

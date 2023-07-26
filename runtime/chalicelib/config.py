@@ -4,7 +4,6 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
-
 from chalice import CORSConfig
 from chalicelib.enums import AppEnv
 from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator

@@ -222,6 +222,12 @@ def get_funding_overview():
         current_assets_vnd - stables_amount * current_usd_price
     ) / capital_vnd_deployed
 
+    link_price = round(float(get_token_price(["LINKUSDT"])[0].get("price")), 1)
+    link_price_breakevent = round(link_price / (position_pnl_usd * 0.01), 1)
+    link_position = current_assets.get("positionAmountVos")[0]
+    link_position_value = round(float(link_position.get("amountInUSDT")))
+    link_position_amount = float(link_position.get("amount"))
+
     return {
         "current_amount_in_vnd": current_assets_vnd,
         "current_amount_in_usd": current_assets_usd,
@@ -237,4 +243,22 @@ def get_funding_overview():
         "current_usd_price": current_usd_price,
         "current_assets": current_assets,
         "deposits": deposits,
+        "link_price": link_price,
+        "link_price_breakevent": link_price_breakevent,
+        "link_position_value": link_position_value,
+        "link_position_amount": link_position_amount,
     }
+
+
+# def funding_overview = get_funding_overview()
+
+
+#     response = dict(
+#         funding_overview,
+#         **{
+#             "link_price": link_price,
+#             "link_price_breakevent": link_price_breakevent,
+#             "link_position_value": link_position_value,
+#             "link_position_amount": link_position_amount,
+#         },
+#     )

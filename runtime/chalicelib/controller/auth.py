@@ -3,7 +3,13 @@ import random
 
 from chalicelib.events.base import EventType, post_event
 from chalicelib.logger_app import logger
-from chalicelib.schemas import TokenPayload, UserSignIn, UserResetPassword
+from chalicelib.schemas import (
+    TokenPayload,
+    UserAdminChangePassword,
+    UserChangePassword,
+    UserConfirmForgotPassword,
+    UserSignIn,
+)
 from chalicelib.services.authorizers import Authenticator
 from chalicelib.services.authorizers import authenticator as cog_authenticator
 
@@ -48,6 +54,10 @@ def get_users(authenticator: Authenticator = cog_authenticator):
     return authenticator.get_users()
 
 
+def get_user(access_token: str, authenticator: Authenticator = cog_authenticator):
+    return authenticator.get_user(access_token)
+
+
 def initiate_forgot_password(
     username: str, authenticator: Authenticator = cog_authenticator
 ):
@@ -55,7 +65,7 @@ def initiate_forgot_password(
 
 
 def confirm_forgot_password(
-    user: UserResetPassword, authenticator: Authenticator = cog_authenticator
+    user: UserConfirmForgotPassword, authenticator: Authenticator = cog_authenticator
 ):
     return authenticator.confirm_forgot_password(
         user.username,
@@ -65,12 +75,10 @@ def confirm_forgot_password(
 
 
 def change_password(
-    user: UserResetPassword, authenticator: Authenticator = cog_authenticator
+    user: UserChangePassword, authenticator: Authenticator = cog_authenticator
 ):
-    pass
-
-
-def admin_change_password(
-    user: UserResetPassword, authenticator: Authenticator = cog_authenticator
-):
-    pass
+    return authenticator.change_password(
+        user.access_token,
+        user.old_password,
+        user.new_password,
+    )

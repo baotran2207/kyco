@@ -42,6 +42,7 @@ def send_message(queue, message_body: str, message_attributes: Optional[dict] = 
         response = queue.send_message(
             MessageBody=message_body, MessageAttributes=message_attributes
         )
+        logger.info("Sent message: %s", message_body)
     except ClientError as error:
         logger.exception("Send message failed: %s", message_body)
         raise error
@@ -106,13 +107,17 @@ def delete_message(message):
         raise error
 
 
-def send_email_queue(*arg):
+def send_email_queue(message_body: str, message_attributes: Optional[dict] = None):
     sqs_email = get_queue(
         settings.SQS_SENDEMAIL
         if "arn:aws:sqs" not in settings.SQS_SENDEMAIL
         else settings.SQS_SENDEMAIL.split(":")[-1]
     )
-    return send_message(sqs_email, *arg)
+    parse_dict_to_sqs_message_attrs(message_attributes)
+    logger.info(f"Sending message to sqs {message_body} ")
+    return send_message(
+        sqs_email, message_body, parse_dict_to_sqs_message_attrs(message_attributes)
+    )
 
 
 def parse_dict_to_sqs_message_attrs(dict_: dict) -> dict:

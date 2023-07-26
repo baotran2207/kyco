@@ -6,7 +6,6 @@ from chalicelib.schemas.user import UserCreate
 
 
 def handle_user_signup_event(user):
-    print(f"User registered with email address {user}")
     # session = SessionLocal()
     # db_user = session.query(User.email == user.username).first()
     # if db_user is None:

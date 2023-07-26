@@ -44,14 +44,14 @@
         "editor.codeActionsOnSave": {
             "source.organizeImports": true
         },
+        "editor.defaultFormatter": "ms-python.black-formatter",
 
     },
     "typescript.tsdk": "./node_modules/typescript/lib", // we want to use the TS server from our node_modules folder to control its version
     "python.linting.enabled": true,
     "python.formatting.provider": "black",
-    // "python.sortImports.args": ["--profile", "black"],
+    "isort.args": ["--profile", "black"],
     "typescript.preferences.quoteStyle": "single",
-    "javascript.preferences.quoteStyle": "single",
     "typescriptHero.imports.stringQuoteStyle": "'",
     "prettier.printWidth": 120,
     "prettier.singleQuote": true,

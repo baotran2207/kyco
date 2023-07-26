@@ -14,11 +14,11 @@ from chalice import (
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
 from chalicelib.schemas import (
+    AuthorizedUser,
     UserBase,
     UserCreate,
     UserLoginResponse,
     UserSignIn,
-    AuthorizedUser,
 )
 
 cognito_authorizer = CognitoUserPoolAuthorizer(
@@ -113,7 +113,6 @@ class CognitoAuth:
 
     def get_user(self, access_token: str):
         user = self.cognito_client.get_user(
-            # ClientId=self.app_client_id,
             AccessToken=access_token,
         )
         return user
@@ -247,21 +246,30 @@ class CognitoAuth:
 
         """respond_to_auth_challenge"""
 
-    def change_password(self, username):
-        pass
+    def change_password(self, access_token, old_password, new_password):
+        try:
+            response = self.cognito_client.change_password(
+                PreviousPassword=old_password,
+                ProposedPassword=new_password,
+                AccessToken=access_token,
+            )
+            logger.debug(response)
+            return response
+
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
 
     def initiate_forgot_password(self, username: str):
         try:
             response = self.cognito_client.forgot_password(
                 ClientId=self.app_client_id,
-                # SecretHash="string",
-                # UserContextData={"IpAddress": "string", "EncodedData": "string"},
                 Username=username,
                 # AnalyticsMetadata={"AnalyticsEndpointId": "string"},
                 # ClientMetadata={"string": "string"},
             )
-
-            logger.debug(response)
             return response
 
         except ClientError as err:
@@ -278,14 +286,10 @@ class CognitoAuth:
                 ClientId=self.app_client_id,
                 ConfirmationCode=confirmation_code,
                 Password=new_password,
-                # SecretHash="string",
-                # UserContextData={"IpAddress": "string", "EncodedData": "string"},
                 Username=username,
                 # AnalyticsMetadata={"AnalyticsEndpointId": "string"},
                 # ClientMetadata={"string": "string"},
             )
-
-            logger.debug(response)
             return response
 
         except ClientError as err:
@@ -300,12 +304,13 @@ cog_authenticator = CognitoAuth(
     settings.COGNITO_USER_POOL_ID,
     settings.COGNITO_APP_CLIENT_ID,
 )
-
 authenticator = cog_authenticator
 
 
 def get_current_user(current_request):
-    current_user = AuthorizedUser(
-        **current_request.to_dict()["context"]["authorizer"]["claims"]
-    )
+    current_auth_object = current_request.to_dict()["context"].get("authorizer")
+    if not current_auth_object:
+        raise UnauthorizedError("Unauthorized")
+
+    current_user = AuthorizedUser(**current_auth_object["claims"])
     return current_user

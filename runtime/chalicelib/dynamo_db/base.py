@@ -1,9 +1,9 @@
-import boto3
-from chalicelib.config import settings
 import time
 from dataclasses import dataclass
-from boto3.dynamodb.conditions import Key
-from boto3.dynamodb.conditions import Attr
+
+import boto3
+from boto3.dynamodb.conditions import Attr, Key
+from chalicelib.config import settings
 
 dynamodb = boto3.resource("dynamodb")
 dynamodb_table = dynamodb.Table(settings.DYNAMO_TABLE_NAME)

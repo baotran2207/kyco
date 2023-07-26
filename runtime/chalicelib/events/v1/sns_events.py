@@ -1,12 +1,11 @@
 # from chalicelib.blueprint import sns_bp
+import json
+
 from chalice import Blueprint
 from chalice.app import SNSEvent
 from chalicelib.config import settings
+from chalicelib.events.base import EventType, subscribe, subscribe_lambda_subscribers
 from chalicelib.logger_app import logger
-from chalicelib.events.base import EventType, subscribe_lambda_subscribers, subscribe
-from chalicelib.logger_app import logger
-
-import json
 
 sns_bp = Blueprint(__name__)
 

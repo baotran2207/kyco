@@ -1,12 +1,11 @@
-from chalicelib.logger_app import logger
-from .event_type import EventType
-from chalicelib.services.sns_service import (
-    publish_message,
-    sns_wrapper,
-    topic as sns_topic,
-)
 import json
 from itertools import chain
+
+from chalicelib.logger_app import logger
+from chalicelib.services.sns_service import publish_message, sns_wrapper
+from chalicelib.services.sns_service import topic as sns_topic
+
+from .event_type import EventType
 
 subscribers = dict()
 lambda_subscribers = dict()
@@ -53,10 +52,11 @@ def post_event(event_type: str, payload: dict):
 
 
 def init_listeners():
+    from chalicelib.events.v1.sns_events import setup_sns_event_handlers
+
     from .listener.email_listener import setup_email_event_handlers
     from .listener.log_listener import setup_log_event_handlers
     from .listener.users_listener import setup_user_event_handlers
-    from chalicelib.events.v1.sns_events import setup_sns_event_handlers
 
     setup_log_event_handlers()
     setup_email_event_handlers()
