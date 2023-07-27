@@ -1,3 +1,4 @@
+chalice
 mypy
 pre-commit
 black

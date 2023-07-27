@@ -2,7 +2,8 @@ boto3<2.0.0
 sqlalchemy<1.4
 requests
 aws_lambda_powertools
-pydantic==1.10.10
+pydantic
+pydantic-settings
 pydantic[email]
 psycopg2-binary
 PyJWT
