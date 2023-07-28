@@ -1,4 +1,5 @@
 from chalice import BadRequestError, Blueprint
+from sqlalchemy.sql import text
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.events.base import add_filters_to_lambda_subscribers, post_event
@@ -35,9 +36,8 @@ def test_sqs():
 @unname_bp.route("/check_db_connection")
 def check_db_connection():
     db = SessionLocal()
-    query = db.execute("SELECT 1")
+    query = db.execute(text("SELECT 1"))
     logger.info(f" Connection ok ! Detail {query} ")
-    logger.error(f"Connection ok ! ")
     return "Connection is ok"
 
 

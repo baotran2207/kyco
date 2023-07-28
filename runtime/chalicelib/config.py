@@ -135,6 +135,9 @@ class AppSettings(BaseSettings):
     BINANCE_API_KEY: str = os.environ.get("BINANCE_API_KEY")
     BINANCE_API_SECRET: str = os.environ.get("BINANCE_API_SECRET")
 
+    # TELEGRAM_BOT_TOKEN
+    TELEGRAM_BOT_TOKEN: str = os.environ.get("TELEGRAM_BOT_TOKEN")
+
 
 cors_config = CORSConfig(
     allow_origin="*",
