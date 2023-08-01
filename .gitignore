@@ -139,3 +139,5 @@ runtime/.chalice/config.json
 .dev
 
 static/private
+redux-workflow/.env.production
+redux-workflow/.env.development

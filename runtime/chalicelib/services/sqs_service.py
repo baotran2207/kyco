@@ -10,17 +10,24 @@ sqs = boto3.resource("sqs")
 # snippet-end:[python.example_code.sqs.message_wrapper_imports]
 
 
+def check_queue_name(queue_name: str):
+    if "arn:aws:sqs" not in queue_name:
+        return queue_name
+    return queue_name.split(":")[-1]
+
+
 def get_queue(name: str):
     """
     Gets an SQS queue by name.
     :param name: The name that was used to create the queue.
     :return: A Queue object.
     """
+    q_name = check_queue_name(name)
     try:
-        queue = sqs.get_queue_by_name(QueueName=name)
-        logger.info("Got queue '%s' with URL=%s", name, queue.url)
+        queue = sqs.get_queue_by_name(QueueName=q_name)
+        logger.info("Got queue '%s' with URL=%s", q_name, queue.url)
     except ClientError as error:
-        logger.exception("Couldn't get queue named %s.", name)
+        logger.exception("Couldn't get queue named %s.", q_name)
         raise error
     else:
         return queue
@@ -42,6 +49,7 @@ def send_message(queue, message_body: str, message_attributes: Optional[dict] = 
         response = queue.send_message(
             MessageBody=message_body, MessageAttributes=message_attributes
         )
+        logger.info("Sent message: %s", message_body)
     except ClientError as error:
         logger.exception("Send message failed: %s", message_body)
         raise error
@@ -96,27 +104,44 @@ def send_messages(queue, messages):
         return response
 
 
-# snippet-start:[python.example_code.sqs.DeleteMessage]
-def delete_message(message):
-    try:
-        message.delete()
-        logger.info("Deleted message: %s", message.message_id)
-    except ClientError as error:
-        logger.exception("Couldn't delete message: %s", message.message_id)
-        raise error
-
-
-def send_email_queue(*arg):
-    sqs_email = get_queue(
-        settings.SQS_SENDEMAIL
-        if "arn:aws:sqs" not in settings.SQS_SENDEMAIL
-        else settings.SQS_SENDEMAIL.split(":")[-1]
+def send_email_queue(message_body: str, message_attributes: Optional[dict] = None):
+    sqs_email = get_queue(settings.SQS_SENDEMAIL)
+    parse_dict_to_sqs_message_attrs(message_attributes)
+    logger.info(f"Sending message to sqs {message_body} ")
+    return send_message(
+        sqs_email, message_body, parse_dict_to_sqs_message_attrs(message_attributes)
     )
-    return send_message(sqs_email, *arg)
 
 
 def parse_dict_to_sqs_message_attrs(dict_: dict) -> dict:
-    return {
-        key: {"StringValue": str(val), "DataType": "String"}
-        for key, val in dict_.items()
-    }
+    return {key: {"StringValue": str(val), "DataType": "String"} for key, val in dict_.items()}
+
+
+def delete_messages(queue, messages):
+    """
+    Delete a batch of messages from a queue in a single request.
+
+    :param queue: The queue from which to delete the messages.
+    :param messages: The list of messages to delete.
+    :return: The response from SQS that contains the list of successful and failed
+             message deletions.
+    """
+    try:
+        entries = [
+            {
+                "Id": str(ind),
+                "ReceiptHandle": msg.receipt_handle,
+            }
+            for ind, msg in enumerate(messages)
+        ]
+        response = queue.delete_messages(Entries=entries)
+        if "Successful" in response:
+            for msg_meta in response["Successful"]:
+                logger.info("Deleted %s", messages[int(msg_meta["Id"])].receipt_handle)
+        if "Failed" in response:
+            for msg_meta in response["Failed"]:
+                logger.warning("Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle)
+    except ClientError:
+        logger.exception("Couldn't delete messages from queue %s", queue)
+    else:
+        return response

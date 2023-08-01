@@ -1,6 +1,7 @@
 from chalice import Blueprint, Chalice
 from chalicelib.dynamo_db.base import dynamodb_table
-from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.logger_app import logger
+from chalicelib.services.authorizers import chalice_authorizer, get_current_user
 
 users_blueprints = Blueprint(__name__)
 
@@ -20,10 +21,26 @@ users_blueprints = Blueprint(__name__)
 @users_blueprints.route("/user_info", methods=["GET"], authorizer=chalice_authorizer)
 def user_info():
     headers = users_blueprints.current_app.current_request.headers
-    print(headers)
-    return {"success": "ok"}
+    current_user = get_current_user(users_blueprints.current_app.current_request)
+    return current_user.dict()
 
 
-@users_blueprints.route("/users", methods=["GET"])
-def get_users():
-    return "ok"
+@users_blueprints.route(
+    "/users", methods=["GET", "POST"], authorizer=chalice_authorizer
+)
+def routes_users():
+    route_method = users_blueprints.current_app.current_request.method
+
+
+@users_blueprints.route(
+    "/users/{_id}",
+    methods=["GET", "PUT", "PATCH", "DELETE"],
+    authorizer=chalice_authorizer,
+)
+def routes_user(_id):
+    route_method = users_blueprints.current_app.current_request.method
+    current_user = get_current_user(users_blueprints.current_app.current_request)
+
+    is_me = current_user.sub == _id
+
+    return {"message": "ok"}

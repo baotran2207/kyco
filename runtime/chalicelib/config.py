@@ -4,8 +4,11 @@ import os
 from typing import Any, Dict, Optional
 
 import boto3
+from chalice import CORSConfig
 from chalicelib.enums import AppEnv
-from pydantic import BaseSettings, HttpUrl, PostgresDsn, SecretStr, validator
+from pydantic import validator, HttpUrl, PostgresDsn
+
+from pydantic_settings import BaseSettings
 
 ENV = os.environ.get("ENV", "dev")
 
@@ -30,15 +33,14 @@ class AppSettings(BaseSettings):
     )
     WEBMASTER_PASSWORD: str = os.environ.get("WEBMASTER_PASSWORD")
     # DB
-    POSTGRES_SERVER: str = os.environ.get("POSTGRES_SERVER")
-    POSTGRES_USER: str = os.environ.get("POSTGRES_USER")
-    POSTGRES_PASSWORD: str = os.environ.get("POSTGRES_PASSWORD")
-    POSTGRES_DB: str = os.environ.get("POSTGRES_DB")
-    SQLALCHEMY_DATABASE_URI: Optional[PostgresDsn] = None
+    POSTGRES_SERVER: Optional[str] = os.environ.get("POSTGRES_SERVER")
+    POSTGRES_USER: Optional[str] = os.environ.get("POSTGRES_USER")
+    POSTGRES_PASSWORD: Optional[str] = os.environ.get("POSTGRES_PASSWORD")
+    POSTGRES_DB: Optional[str] = os.environ.get("POSTGRES_DB")
+    SQLALCHEMY_DATABASE_URI: Optional[str] = None
 
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
-
         if isinstance(val, str):
             return val
         if not values.get("POSTGRES_SERVER"):
@@ -53,7 +55,7 @@ class AppSettings(BaseSettings):
         )
 
     # redis
-    REDIS_URL = os.environ.get("REDIS_URL", "")
+    REDIS_URL: Optional[str] = os.environ.get("REDIS_URL", "")
     # Security
     COGNITO_USER_POOL_NAME: str = os.environ.get("COGNITO_USER_POOL_NAME", "")
     COGNITO_USER_POOL_ARN: str = os.environ.get("COGNITO_USER_POOL_ARN", "")
@@ -87,7 +89,7 @@ class AppSettings(BaseSettings):
     # s3
     S3_MAIN_BUCKET: str = os.environ.get("S3_MAIN_BUCKET", "")
     # SQS
-    SQS_GENERIC = os.environ.get("SQS_GENERIC", "")
+    SQS_GENERIC: Optional[str] = os.environ.get("SQS_GENERIC", "")
     SQS_GENERIC_NAME: Optional[str] = os.environ.get("SQS_GENERIC_NAME")
 
     @validator("SQS_GENERIC_NAME", pre=False)
@@ -98,12 +100,12 @@ class AppSettings(BaseSettings):
         sqs_name = values.get("SQS_GENERIC")
         return sqs_name and sqs_name.split(":")[-1] or None
 
-    SQS_SENDEMAIL = os.environ.get("SQS_SENDEMAIL", "")
-    SQS_DEADLETTER = os.environ.get("SQS_DEADLETTER", "")
+    SQS_SENDEMAIL: Optional[str] = os.environ.get("SQS_SENDEMAIL", "")
+    SQS_DEADLETTER: Optional[str] = os.environ.get("SQS_DEADLETTER", "")
 
     # SNS
-    SNS_MAIN_TOPIC_ARN: Optional[str] = os.environ.get("SNS_MAIN_TOPIC", "")
-    SNS_MAIN_TOPIC_NAME: Optional[str] = os.environ.get("SNS_MAIN_TOPIC")
+    SNS_MAIN_TOPIC_ARN: Optional[str] = os.environ.get("SNS_MAIN_TOPIC_ARN")
+    SNS_MAIN_TOPIC_NAME: Optional[str] = os.environ.get("SNS_MAIN_TOPIC_NAME")
 
     @validator("SNS_MAIN_TOPIC_NAME", pre=False)
     def set_sns_topic_name(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
@@ -114,14 +116,13 @@ class AppSettings(BaseSettings):
         return sns_arn and sns_arn.split(":")[-1] or None
 
     # GITHUB
-    GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN")
+    GITHUB_TOKEN: Optional[str] = os.environ.get("GITHUB_TOKEN")
 
     # logging
     LOGGING_LEVEL: Optional[str] = None
 
     @validator("LOGGING_LEVEL", pre=False)
     def set_logging_level(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
-
         if isinstance(val, str):
             return val
 
@@ -133,6 +134,18 @@ class AppSettings(BaseSettings):
     # binance
     BINANCE_API_KEY: str = os.environ.get("BINANCE_API_KEY")
     BINANCE_API_SECRET: str = os.environ.get("BINANCE_API_SECRET")
+
+    # TELEGRAM_BOT_TOKEN
+    TELEGRAM_BOT_TOKEN: str = os.environ.get("TELEGRAM_BOT_TOKEN")
+
+
+cors_config = CORSConfig(
+    allow_origin="*",
+    # allow_headers=["X-Special-Header"],
+    max_age=600,
+    # expose_headers=["X-Special-Header"],
+    allow_credentials=True,
+)
 
 
 settings = AppSettings()

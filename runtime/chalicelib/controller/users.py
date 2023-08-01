@@ -8,32 +8,66 @@ from chalicelib.schemas import UserCreate, UserSignIn
 from chalicelib.services.authorizers import Authenticator
 from chalicelib.services.authorizers import authenticator as current_authenticator
 
-# def login_user(user: UserSignIn, authenticator: Authenticator = current_authenticator):
-#     response = authenticator.sign_in(user)
-#     return response
+
+class BatchAPI(Protocol):
+    decorators = [login_required]
+
+    # @swag_from(f"openapi/apidocs/{name}_get_all.yaml")
+    def get(self):
+        security.check_auth(cls, "R")
+        query = GET_query(cls)
+
+        if hasattr(cls, "valid_to_show"):
+            query = query.filter(cls.valid_to_show)
+
+        log_event(cls.__entity_name__)
+        return GET_postprocess(cls, query)
+
+    # @swag_from(f"openapi/apidocs/{name}_post.yaml")
+    def post(self):
+        utils.require_json()
+        new_pk = insert_data(cls, request.get_json(), aliases=True)
+        db.session.commit()
+        perform_actions_after_request(cls, request.get_json())
+        return GET_one_fn(cls, new_pk, GET_query(cls))
 
 
-# def login_user_with_password(
-#     user: UserSignIn, authenticator: Authenticator = current_authenticator
-# ):
-#     response = authenticator.sign_in(user)
-#     return response
+class InstanceAPI:
+    decorators = [login_required]
 
+    @swag_from(f"openapi/apidocs/{name}_put.yaml")
+    def patch(self, id):
+        utils.require_json()
+        update_data(cls, request.get_json(), id)
+        db.session.commit()
+        perform_actions_after_request(cls, request.get_json(), id)
+        return self.get(id)
 
-# def login_user_with_passwordless(
-#     user: UserSignIn, authenticator: Authenticator = current_authenticator
-# ):
-#     response = authenticator.sign_in(user)
-#     return response
+    @swag_from(f"openapi/apidocs/{name}_put.yaml")
+    def put(self, id):
+        return self.patch(id)
 
+    @swag_from(f"openapi/apidocs/{name}_get.yaml")
+    def get(self, id):
+        security.check_auth(cls, "R")
+        return GET_one_fn(cls, id, GET_query(cls))
 
-# def password_forgotten(
-#     user: UserSignIn, authenticator: Authenticator = current_authenticator
-# ):
-#     pass
+    @swag_from(f"openapi/apidocs/{name}_delete.yaml")
+    def delete(self, id):
+        security.check_auth(cls, "D", id)
 
-
-# def reset_password(
-#     user: UserSignIn, authenticator: Authenticator = current_authenticator
-# ):
-#     pass
+        statement = (
+            cls.__table__.update()
+            .values(
+                f_changedby=current_user.id,
+                deleted="T",
+            )
+            .where(sa.and_(cls.id == id, cls.deleted == "F"))
+        )
+        x = execute_statement(cls, statement)
+        if x.rowcount > 0:
+            db.session.commit()
+            perform_actions_after_request(cls, {"deleted": True}, id)
+            return "", 204
+        else:
+            return "No such id\n", 404

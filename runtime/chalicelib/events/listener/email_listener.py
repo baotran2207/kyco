@@ -1,7 +1,6 @@
 from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
 from chalicelib.schemas.messages import SQSMESSAGE
-from chalicelib.services.email_sender import send_otp
 from chalicelib.services.sqs_service import (
     parse_dict_to_sqs_message_attrs,
     send_email_queue,
@@ -9,22 +8,22 @@ from chalicelib.services.sqs_service import (
 
 
 def handle_user_registered_event(user):
-    logger.info(f"Attemp to sync user with sql {user.dict()}")
+    logger.info(f"Attemp to sync user with sql {user}")
     # message_attributes = parse_dict_to_sqs_message_attrs(user.dict())
     # send_email_queue("handle_post_user_login_event", message_attributes)
 
 
 def handle_user_password_forgotten_event(user):
-    logger.info(f"User with email address {user.username} requested a password reset")
+    logger.info(f"User with email address {user} requested a password reset")
 
 
 def handle_user_upgrade_plan_event(user):
-    logger.info(f"User with email address {user.username} has upgraded their plan")
+    logger.info(f"User with email address {user} has upgraded their plan")
 
 
-def handle_post_user_login_event(user):
-    logger.info(f"User login {user.dict()}")
-    message_attributes = parse_dict_to_sqs_message_attrs(user.dict())
+def handle_post_user_login_event(payload):
+    logger.info(f"User login {payload}")
+    message_attributes = parse_dict_to_sqs_message_attrs(payload)
     send_email_queue("handle_post_user_login_event", message_attributes)
     logger.info(f"Send message ")
 

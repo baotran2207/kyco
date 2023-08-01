@@ -2,8 +2,18 @@ import datetime as dt
 import re
 from typing import Optional
 
+from chalicelib.config import settings
 from chalicelib.enums import *
-from pydantic import BaseModel, EmailStr, fields, validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    HttpUrl,
+    SecretStr,
+    field_validator,
+    fields,
+    root_validator,
+    validator,
+)
 
 
 class CustomBaseModel(BaseModel):
@@ -17,14 +27,14 @@ class UserBase(CustomBaseModel):
 
 
 class UserAuth(CustomBaseModel):
-    email: Optional[EmailStr]
-    phone_number: Optional[str]
-    username: Optional[str]
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    username: str | None = None
 
     @validator("phone_number")
     def phone_validation(cls, v):
         regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
-        if v and not re.search(regex, v, re.I):
+        if v and not re.search(settings.PASSWORD_REGEX, v, re.I):
             raise ValueError("Phone Number Invalid.")
         return v
 
@@ -38,14 +48,31 @@ class UserAuth(CustomBaseModel):
             raise ValueError("phone_number or email invalid !")
 
         if phone_number and email:
-            logger.info(
-                "Both phone_number and email are valid ! Email is set for username"
-            )
+            logger.info("Both phone_number and email are valid ! Email is set for username")
         return username
 
 
+class AuthorizedUser(UserAuth):
+    sub: str
+    iss: str
+    email_verified: bool = False
+    phone_number_verified: bool = False
+    groups: list[str] = []
+
+    token_use: str = "id"
+    auth_time: int | None = None
+    exp: int | None = None
+    iat: int | None = None
+    attributes: dict = {}
+    uuid: str | None = None
+
+    @validator("uuid", pre=True, always=True)
+    def set_uuid(cls, v, *, values):
+        return values.get("sub")
+
+
 class UserSignIn(UserAuth):
-    password: Optional[str]
+    password: str | None = None
 
 
 class UserSignInChallenge(UserAuth):
@@ -54,12 +81,25 @@ class UserSignInChallenge(UserAuth):
 
 
 class UserCreate(UserAuth):
-    password: Optional[str]
-    user_info: Optional[dict]
+    password: str | None = None
+    user_info: dict | None = None
 
 
-class UserUpdate(CustomBaseModel):
-    password: Optional[str] = None
+class UserConfirmForgotPassword(UserAuth):
+    confirmation_code: str
+    new_password: str
+    new_password2: str
+
+
+class UserChangePassword(BaseModel):
+    access_token: str
+    old_password: str
+    new_password: str
+
+
+class UserAdminChangePassword(UserAuth):
+    old_password: str
+    new_password: str
 
 
 class User(CustomBaseModel):

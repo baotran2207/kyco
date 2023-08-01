@@ -11,3 +11,8 @@ class AppEnv(Enum):
     prod: str = "prod"
     dev: str = "dev"
     test: str = "test"
+
+
+class EmailType(Enum):
+    NEW_OTP = "NEW_OTP"
+    PORFOLIO_OVERVIEW = "PORFOLIO_OVERVIEW"

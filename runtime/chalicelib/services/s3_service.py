@@ -286,7 +286,6 @@ s3_resource = boto3.resource("s3")
 
 
 def read_s3_object(bucket, object_key):
-
     s3 = boto3.client("s3")
     bucket = s3_resource.Bucket(bucket)
     # lines = obj['Body'].read().decode("utf-8")

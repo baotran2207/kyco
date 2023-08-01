@@ -1,11 +1,17 @@
+import json
+
 from chalice import Blueprint
+from chalicelib.config import settings
+from chalicelib.enums import EmailType
+from chalicelib.logger_app import logger
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.services.email_sender import enqueue_send_email
 from chalicelib.services.porfolio import (
     deposit_overview,
+    get_funding_overview,
     get_p2p_overview,
     get_p2p_pricing,
     get_p2p_records,
-    get_saving_accounts_overview,
     get_token_price,
     update_bnb_p2p_records,
     update_p2p_history_records,
@@ -29,29 +35,14 @@ def trigger_update():
 
 
 @porfolio_bp.route("/overview", authorizer=chalice_authorizer)
-def get_funding_overview():
-    current_assets = get_saving_accounts_overview()
-    current_assets_usd = float(current_assets["totalAmountInUSDT"])
-    current_usd_price = float(get_p2p_pricing())
-    current_assets_vnd = current_usd_price * current_assets_usd
-
-    deposits = deposit_overview()
-    capital_usd = deposits["capital_usd"]
-    capital_vnd = deposits["capital_vnd"]
-
-    pnl_usd = current_assets_usd / capital_usd
-    pnl_vnd = current_assets_vnd / capital_vnd
-    return {
-        "current_amount_in_vnd": current_assets_vnd,
-        "current_amount_in_usd": current_assets_usd,
-        "PNL": {
-            "pnl_in_vnd": f"{pnl_vnd:,.2%}",
-            "pnl_in_usd": f"{pnl_usd:,.2%}",
-        },
-        "current_usd_price": current_usd_price,
-        "current_assets": current_assets,
-        "deposits": deposits,
-    }
+def get_funding_overview_route():
+    response = get_funding_overview()
+    enqueue_send_email(
+        to_emails=[settings.WEBMASTER_EMAIL],
+        message_type=EmailType.PORFOLIO_OVERVIEW.value,
+        message_payload=response,
+    )
+    return response
 
 
 @porfolio_bp.route("/price/{token_pair}")

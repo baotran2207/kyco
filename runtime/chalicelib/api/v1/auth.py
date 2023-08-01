@@ -1,14 +1,28 @@
 from chalice import BadRequestError, Blueprint
 from chalicelib.config import settings
 from chalicelib.controller.auth import (
+    change_password,
+    confirm_forgot_password,
     init_challenge,
+    initiate_forgot_password,
     login,
     login_with_challenge,
     sign_up,
 )
 from chalicelib.logger_app import logger
-from chalicelib.schemas import UserAuth, UserCreate, UserSignIn, UserSignInChallenge
-from chalicelib.services.authorizers import authenticator
+from chalicelib.schemas import (
+    UserAuth,
+    UserChangePassword,
+    UserConfirmForgotPassword,
+    UserCreate,
+    UserSignIn,
+    UserSignInChallenge,
+)
+from chalicelib.services.authorizers import (
+    authenticator,
+    chalice_authorizer,
+    get_current_user,
+)
 from chalicelib.utils import generate_new_password
 from pydantic import ValidationError
 
@@ -21,6 +35,7 @@ auth_routes = Blueprint(__name__)
 @auth_routes.route("/login", methods=["POST"])
 def auth_login():
     params = auth_routes.current_app.current_request.json_body
+    logger.debug(params)
     user = UserSignIn(**params)
     reponse = login(user, authenticator)
     return reponse
@@ -79,9 +94,7 @@ def confirm_user():
     if not confirmation_code:
         raise BadRequestError("confirmation_code is required")
 
-    authenticator.confirm_user_sign_up(
-        username=user.username, confirmation_code=confirmation_code
-    )
+    authenticator.confirm_user_sign_up(username=user.username, confirmation_code=confirmation_code)
 
     return {"message": "Confirmed registration succeccfully ! You can login "}
 
@@ -89,6 +102,7 @@ def confirm_user():
 @auth_routes.route("/register", methods=["POST", "GET"])
 def register():
     params = auth_routes.current_app.current_request.json_body
+
     try:
         new_user_info = UserCreate(
             email=params.get("email"),
@@ -102,13 +116,51 @@ def register():
     return created_new_user.dict()
 
 
-@auth_routes.route("/reset_password", methods=["POST", "GET"])
-def reset_password():
+@auth_routes.route("/change-password", methods=["POST"], authorizer=chalice_authorizer)
+def route_change_password():
     params = auth_routes.current_app.current_request.json_body
-    pass
+    logger.debug(params)
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        user = UserChangePassword(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    verify_code = change_password(user)
+
+    logger.debug(user)
+
+    return {"message": "password changed succeccfully ! You can login "}
 
 
-@auth_routes.route("/forgot_password", methods=["POST", "GET"])
+@auth_routes.route("/forgot-password", methods=["POST"])
 def forgot_password():
     params = auth_routes.current_app.current_request.json_body
-    pass
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        user = UserAuth(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    verify_code = initiate_forgot_password(user.username)
+    return {"message": "A confirmation code sent to your email"}
+
+
+@auth_routes.route("/confirm-forgot-password", methods=["POST"])
+def route_confirm_forgot_password():
+    params = auth_routes.current_app.current_request.json_body
+    if not params:
+        raise BadRequestError(f"missing required information : phone number OR email")
+    try:
+        logger.debug(params)
+        user = UserForgotPassword(**params)
+    except ValidationError as e:
+        raise BadRequestError(f"{e}")
+
+    response = confirm_forgot_password(user)
+
+    logger.debug(response)
+
+    return {"message": "password changed succeccfully ! You can login "}

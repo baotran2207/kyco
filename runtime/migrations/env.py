@@ -5,6 +5,7 @@ from sqlalchemy import pool
 
 from alembic import context
 from chalicelib.config import settings
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -25,9 +26,10 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
-def get_url():
 
+def get_url():
     return settings.SQLALCHEMY_DATABASE_URI
+
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -42,9 +44,7 @@ def run_migrations_offline():
 
     """
     url = get_url()
-    context.configure(
-        url=url, target_metadata=target_metadata, compare_type=True
-    )
+    context.configure(url=url, target_metadata=target_metadata, compare_type=True)
 
     with context.begin_transaction():
         context.run_migrations()
@@ -60,7 +60,9 @@ def run_migrations_online():
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(
-        configuration, prefix="sqlalchemy.", poolclass=pool.NullPool,
+        configuration,
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
     )
 
     with connectable.connect() as connection:
@@ -70,6 +72,8 @@ def run_migrations_online():
 
         with context.begin_transaction():
             context.run_migrations()
+
+
 # run_migrations_offline()
 
 if context.is_offline_mode():

@@ -1,9 +1,10 @@
+chalice
 mypy
 pre-commit
 black
 isort
 autoflake
-flake8
+flake8==5.0.4
 pytest
 alembic
 jinja2
