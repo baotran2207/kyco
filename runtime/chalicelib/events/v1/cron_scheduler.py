@@ -4,8 +4,9 @@ from chalice import Blueprint
 from chalice.app import Cron, Rate
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
+from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
-from chalicelib.services.email_sender import send_porfolio_overview
+from chalicelib.services.email_sender import enqueue_send_email
 from chalicelib.services.github_service import update_file
 from chalicelib.services.porfolio import (
     get_funding_overview,
@@ -41,8 +42,12 @@ def auto_commit_cron(event):
         logger.info("No commit !")
 
 
-@cronjob_bp.schedule(Cron(15, "0,3,5,12", "?", "*", "*", "*"))
+@cronjob_bp.schedule(Cron(0, "1,12", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
     res = get_funding_overview()
-    send_porfolio_overview(settings.WEBMASTER_EMAIL, res)
+    enqueue_send_email(
+        to_emails=[settings.WEBMASTER_EMAIL],
+        message_type=EmailType.PORFOLIO_OVERVIEW.value,
+        message_payload=response,
+    )
     logger.info("Sent funding overview !")

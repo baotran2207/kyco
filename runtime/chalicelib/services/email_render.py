@@ -1,34 +1,35 @@
-def get_new_otp_message(code) -> dict:
+from chalicelib.enums import EmailType
+
+
+def get_new_otp_message(values: dict) -> dict:
+    otp_code = values.get("otp_code")
+
     return dict(
         {
             "Body": {
                 "Html": {
                     "Charset": "UTF-8",
                     "Data": "<html><body><p>This is your secret login code:</p>"
-                    f"<h3>{code}</h3></body></html>",
+                    f"<h3>{otp_code}</h3></body></html>",
                 },
-                "Text": {"Charset": "UTF-8", "Data": f"Your secret login code: {code}"},
+                "Text": {"Charset": "UTF-8", "Data": f"Your secret login code: {otp_code}"},
             },
             "Subject": {"Charset": "UTF-8", "Data": "Your secret login code"},
         },
     )
 
 
-def render_porfolio_message(values) -> dict:
+def render_porfolio_message(values: dict) -> dict:
     value_in_usd = "${:,.2f}".format(round(values.get("current_amount_in_usd"), 2))
     value_in_vnd = "VND{:,.0f}".format(round(values.get("current_amount_in_vnd"), 0))
 
     deposit_vnd = "VND{:,.0f}".format(round(values.get("deposits").get("capital_vnd")))
     deposit_usd = "${:,.2f}".format(round(values.get("deposits").get("capital_usd")))
 
-    average_buy_price = "VND{:,.0f}".format(
-        round(values.get("deposits").get("average_buy_price"))
-    )
+    average_buy_price = "VND{:,.0f}".format(round(values.get("deposits").get("average_buy_price")))
     current_usd_price = "VND{:,.2f}".format(round(values.get("current_usd_price")))
     capital_usd_deployed = "${:,.2f}".format(round(values.get("capital_usd_deployed")))
-    capital_vnd_deployed = "VND{:,.0f}".format(
-        round(values.get("capital_vnd_deployed"))
-    )
+    capital_vnd_deployed = "VND{:,.0f}".format(round(values.get("capital_vnd_deployed")))
     stables_amount = "${:,.2f}".format(round(values.get("stables_amount")))
     stables_amount_vnd = "VND{:,.0f}".format(
         round(values.get("stables_amount") * values.get("current_usd_price"))
@@ -73,3 +74,9 @@ def render_porfolio_message(values) -> dict:
             },
         },
     )
+
+
+EMAIL_RENDERS = {
+    EmailType.NEW_OTP.value: get_new_otp_message,
+    EmailType.PORFOLIO_OVERVIEW.value: render_porfolio_message,
+}

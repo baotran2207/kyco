@@ -2,47 +2,54 @@ from chalice import Blueprint
 from chalice.app import SQSEvent, SQSRecord
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
+from chalicelib.services.email_render import EMAIL_RENDERS
+from chalicelib.services.ses_service import ses_mail_sender
+from chalicelib.services.sqs_service import delete_messages, get_queue
+from chalicelib.utils import parse_sqs_record_to_email_messages
+from typing_extensions import Protocol
 
 sqs_bp = Blueprint(__name__)
-
-"""
-{'Records':
-    [{
-        'messageId': '3713e86a-9204-4fcf-a4e0-a2ac8d5a7d60',
-        'receiptHandle': 'AQEB4dzu0n+Z0ow8RCJUW0AuFiMaNbvvDTQHuwbHTVjVhTdWFGTHf8Rh6EBb7EumykBQuhc+0jzdhtYxlKqbIv4uknkHFvgP+X8oJHcMk5798dbUBBe9GO6o0z+3idG/JmzNBzvoFbIWUTYNZvOsh59+TTdr/CHXHfOurw+43BLM9UKazCLBjcZYI7p3O4l/gy2K0uo0Iq4ieI8LbRaqArlIqO7v90N2y8GDuxDV0rhvpQlzzivaZAH9XCydmob8N5bkFajDGDYb21H7LI0bG+0j6rYsnk5PbWfvcGyJrvacE+O5anu4TgcjH/Du4+jhVqkmnM4rxziaqaxUU6ojsOYzBKOaEPVoxVwN15V/Kken/7CRDw0ezwnE9PK+5MjN6Y99GomKwVlFfLGw82HJnpN+WA==',
-        'body': 'test sqs mesg',
-        'attributes': {
-            'ApproximateReceiveCount': '1', 'AWSTraceHeader': 'Root=1-63b796bd-3d4d8f371599871c08850c42;Parent=21f6f6d55f3c05d2;Sampled=0',
-            'SentTimestamp': '1672976064184',
-            'SenderId': 'AROA2UDD5TARNC7GJDOXE:kyco-chalice-id-APIHandler-2IvMdGeLzzNJ',
-            'ApproximateFirstReceiveTimestamp': '1672976064191'
-        },
-        'messageAttributes': {
-            'path': {'stringValue': 'test', 'stringListValues': [], 'binaryListValues': [], 'dataType': 'String'},
-            'line': {'stringValue': 'trigger', 'stringListValues': [], 'binaryListValues': [], 'dataType': 'String'}
-        },
-            'md5OfMessageAttributes': 'fcd02f200ceb59c5ed5c9b00962fa92b', 'md5OfBody': '16b90106d00f6ef6a023eff45ca82774', 'eventSource': 'aws:sqs', 'eventSourceARN': 'arn:aws:sqs:ap-southeast-1:730353997858:KycoGeneric', 'awsRegion': 'ap-southeast-1'}]}
-
-"""
 
 
 @sqs_bp.on_sqs_message(queue_arn=settings.SQS_GENERIC, batch_size=10)
 def handle_sqs_generic(event: SQSEvent):
     for record in event:
         body = record.body
-        print(body)
+        logger.debug(body)
         logger.info(f" in even ! Detail {record} ")
-        print(record.messageAttributes)
 
 
 @sqs_bp.on_sqs_message(queue_arn=settings.SQS_SENDEMAIL, batch_size=10)
 def handle_sqs_email(event: SQSEvent):
+    success_msgs = []
     for record in event:
-        logger.info(f" record: {record.body} ")
-        logger.info(f" record dict {record.dict()} ")
-        logger.info(f" record dict {record.messageAttributes} ")
-        # ses.send_email(
-        #     Source=SES_FROM_ADDRESS,
-        #     Destination={"ToAddresses": [email]},
-        #     Message=message,
-        # )
+        record_dict = record.to_dict()
+        logger.info(record_dict)
+        msg_id = record_dict["messageId"]
+        receipt_handle = record_dict["receiptHandle"]
+        logger.info(f" in even ! Detail {msg_id} - {receipt_handle} ")
+
+        email_message = parse_sqs_record_to_email_messages(record_dict)
+        email_type = email_message.get("email_type")
+        email_payload = email_message.get("email_payload")
+
+        rendered_message = EMAIL_RENDERS.get(email_type)(email_payload)
+        try:
+            ses_mail_sender.send_email(
+                to_emails=email_message.get("to_emails"),
+                message=rendered_message,
+                source=email_message.get("source"),
+                cc_emails=email_message.get("cc_emails"),
+                bcc_emails=email_message.get("bcc_emails"),
+                reply_tos=email_message.get("reply_tos"),
+            )
+            success_msgs.append(record)
+        except Exception as e:
+            logger.error(f"Error when sending email {record.body} . Detail {e}")
+            # dead letter queue
+            raise e
+
+    delete_messages(
+        queue=get_queue(settings.SQS_SENDEMAIL),
+        messages=success_msgs,
+    )

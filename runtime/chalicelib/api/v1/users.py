@@ -33,9 +33,14 @@ def routes_users():
 
 
 @users_blueprints.route(
-    "/users/{user_id}", methods=["GET", "PUT", "DELETE"], authorizer=chalice_authorizer
+    "/users/{_id}",
+    methods=["GET", "PUT", "PATCH", "DELETE"],
+    authorizer=chalice_authorizer,
 )
-def routes_user():
+def routes_user(_id):
     route_method = users_blueprints.current_app.current_request.method
-    user_id = users_blueprints.current_request.path_parameters["user_id"]
-    logger.info(user_id)
+    current_user = get_current_user(users_blueprints.current_app.current_request)
+
+    is_me = current_user.sub == _id
+
+    return {"message": "ok"}

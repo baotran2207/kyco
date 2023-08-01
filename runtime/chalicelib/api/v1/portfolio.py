@@ -1,9 +1,11 @@
 import json
 
 from chalice import Blueprint
+from chalicelib.config import settings
+from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
 from chalicelib.services.authorizers import chalice_authorizer
-from chalicelib.services.email_sender import send_porfolio_overview
+from chalicelib.services.email_sender import enqueue_send_email
 from chalicelib.services.porfolio import (
     deposit_overview,
     get_funding_overview,
@@ -35,7 +37,11 @@ def trigger_update():
 @porfolio_bp.route("/overview", authorizer=chalice_authorizer)
 def get_funding_overview_route():
     response = get_funding_overview()
-    send_porfolio_overview("tranthanhbao2207@gmail.com", response)
+    enqueue_send_email(
+        to_emails=[settings.WEBMASTER_EMAIL],
+        message_type=EmailType.PORFOLIO_OVERVIEW.value,
+        message_payload=response,
+    )
     return response
 
 

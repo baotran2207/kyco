@@ -35,6 +35,7 @@ auth_routes = Blueprint(__name__)
 @auth_routes.route("/login", methods=["POST"])
 def auth_login():
     params = auth_routes.current_app.current_request.json_body
+    logger.debug(params)
     user = UserSignIn(**params)
     reponse = login(user, authenticator)
     return reponse
@@ -93,9 +94,7 @@ def confirm_user():
     if not confirmation_code:
         raise BadRequestError("confirmation_code is required")
 
-    authenticator.confirm_user_sign_up(
-        username=user.username, confirmation_code=confirmation_code
-    )
+    authenticator.confirm_user_sign_up(username=user.username, confirmation_code=confirmation_code)
 
     return {"message": "Confirmed registration succeccfully ! You can login "}
 
@@ -103,6 +102,7 @@ def confirm_user():
 @auth_routes.route("/register", methods=["POST", "GET"])
 def register():
     params = auth_routes.current_app.current_request.json_body
+
     try:
         new_user_info = UserCreate(
             email=params.get("email"),

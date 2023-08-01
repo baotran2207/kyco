@@ -1,7 +1,6 @@
 from chalicelib.events.base import EventType, subscribe
 from chalicelib.logger_app import logger
 from chalicelib.schemas.messages import SQSMESSAGE
-from chalicelib.services.email_sender import send_otp
 from chalicelib.services.sqs_service import (
     parse_dict_to_sqs_message_attrs,
     send_email_queue,

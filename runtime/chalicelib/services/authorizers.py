@@ -298,6 +298,26 @@ class CognitoAuth:
             logger.exception(err.response["Error"])
             raise BadRequestError(err.response)
 
+    def update_user_attributes(
+        self,
+        username: str,
+        access_token: str,
+        new_attrs: list[dict],
+        meta_data: dict = {},
+    ):
+        try:
+            response = client.update_user_attributes(
+                UserAttributes=new_attrs,
+                AccessToken=access_token,
+                ClientMetadata=meta_data,
+            )
+            return response
+        except ClientError as err:
+            err_code = err.response["Error"]["Code"]
+            err_msg = err.response["Error"]["Message"]
+            logger.exception(err.response["Error"])
+            raise BadRequestError(err.response)
+
 
 cog_authenticator = CognitoAuth(
     cognito_client,
@@ -307,10 +327,16 @@ cog_authenticator = CognitoAuth(
 authenticator = cog_authenticator
 
 
-def get_current_user(current_request):
+def get_current_user(current_request) -> AuthorizedUser | None:
     current_auth_object = current_request.to_dict()["context"].get("authorizer")
+    logger.debug(current_auth_object)
+    logger.debug(current_request.to_dict()["context"])
     if not current_auth_object:
-        raise UnauthorizedError("Unauthorized")
+        return None
 
-    current_user = AuthorizedUser(**current_auth_object["claims"])
+    claims = current_auth_object.get("claims")
+
+    if not claims:
+        return None
+    current_user = AuthorizedUser(**claims)
     return current_user

@@ -9,6 +9,7 @@ from pydantic import (
     EmailStr,
     HttpUrl,
     SecretStr,
+    field_validator,
     fields,
     root_validator,
     validator,
@@ -26,9 +27,9 @@ class UserBase(CustomBaseModel):
 
 
 class UserAuth(CustomBaseModel):
-    email: Optional[EmailStr]
-    phone_number: Optional[str]
-    username: Optional[str]
+    email: EmailStr | None = None
+    phone_number: str | None = None
+    username: str | None = None
 
     @validator("phone_number")
     def phone_validation(cls, v):
@@ -47,22 +48,23 @@ class UserAuth(CustomBaseModel):
             raise ValueError("phone_number or email invalid !")
 
         if phone_number and email:
-            logger.info(
-                "Both phone_number and email are valid ! Email is set for username"
-            )
+            logger.info("Both phone_number and email are valid ! Email is set for username")
         return username
 
 
 class AuthorizedUser(UserAuth):
     sub: str
-    email_verified: Optional[bool] = False
-    phone_number_verified: Optional[bool] = False
-    token_use: Optional[str]
-    auth_time: Optional[int]
-    exp: Optional[int]
-    iat: Optional[int]
-    attributes: Optional[dict] = {}
-    uuid: Optional[str]
+    iss: str
+    email_verified: bool = False
+    phone_number_verified: bool = False
+    groups: list[str] = []
+
+    token_use: str = "id"
+    auth_time: int | None = None
+    exp: int | None = None
+    iat: int | None = None
+    attributes: dict = {}
+    uuid: str | None = None
 
     @validator("uuid", pre=True, always=True)
     def set_uuid(cls, v, *, values):
@@ -70,7 +72,7 @@ class AuthorizedUser(UserAuth):
 
 
 class UserSignIn(UserAuth):
-    password: Optional[str]
+    password: str | None = None
 
 
 class UserSignInChallenge(UserAuth):
@@ -79,8 +81,8 @@ class UserSignInChallenge(UserAuth):
 
 
 class UserCreate(UserAuth):
-    password: Optional[str]
-    user_info: Optional[dict]
+    password: str | None = None
+    user_info: dict | None = None
 
 
 class UserConfirmForgotPassword(UserAuth):
