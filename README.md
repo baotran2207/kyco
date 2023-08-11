@@ -1,23 +1,18 @@
 # Updating
 
 # I.Introduction:
-
-    This is my personal use project
+This project is my sample serverless application using AWS with lambda functions (chalice based), cognito and storage services .
+One exeption is RMDB database ,due to aurora is not really serverless (and not free :v) , i use supabase for 
 
 # II. Project components
 
 - infrastructure : aws with `cdk` for IaC , handle everything except for SQL db which is supabase (totally free for now).
 
-- runtime (`backend`): powered by `aws chalice` for both restful api and event-driven:
+- runtime (`backend`): powered by `aws chalice` for both restful api and event-driven :
   endpoint : https://zr0fxh86b0.execute-api.ap-southeast-1.amazonaws.com/api
 - kycoui (`frontend`): reactjs (with nextjs), currently only export to static site and hosted on s3
-  endpoint : https://dl4uq37pbr4d2.cloudfront.net/
+  endpoint : https://dl4uq37pbr4d2.cloudfront.net/ (WIP)
 
-Note:
-
-- Database postgres: `superbase.com` with postgres at https://app.supabase.com/project/xggbesitxdlxuygrlmjk
-- Redis ? : updating
-- ....
 
 # III. Development
 
