@@ -25,6 +25,7 @@ cognito_authorizer = CognitoUserPoolAuthorizer(
     settings.COGNITO_USER_POOL_NAME,
     header="Bearer",
     provider_arns=[settings.COGNITO_USER_POOL_ARN],
+    scopes=["openid", "email", "profile"],
 )
 
 
@@ -157,7 +158,9 @@ class CognitoAuth:
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            res_msg = f"Couldn't resend confirmation to {username}. Here's why: {err_code}: {err_msg}"
+            res_msg = (
+                f"Couldn't resend confirmation to {username}. Here's why: {err_code}: {err_msg}"
+            )
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
 
@@ -174,7 +177,9 @@ class CognitoAuth:
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            res_msg = f"Couldn't confirm sign up for  {username}. Here's why: {err_code}: {err_msg}"
+            res_msg = (
+                f"Couldn't confirm sign up for  {username}. Here's why: {err_code}: {err_msg}"
+            )
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
         else:
@@ -278,9 +283,7 @@ class CognitoAuth:
             logger.exception(err.response["Error"])
             raise BadRequestError(err.response)
 
-    def confirm_forgot_password(
-        self, username: str, confirmation_code: str, new_password: str
-    ):
+    def confirm_forgot_password(self, username: str, confirmation_code: str, new_password: str):
         try:
             response = self.cognito_client.confirm_forgot_password(
                 ClientId=self.app_client_id,

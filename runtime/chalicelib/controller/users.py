@@ -9,6 +9,10 @@ from chalicelib.services.authorizers import Authenticator
 from chalicelib.services.authorizers import authenticator as current_authenticator
 
 
+class Users:
+    ...
+
+
 class BatchAPI(Protocol):
     decorators = [login_required]
 

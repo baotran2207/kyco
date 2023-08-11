@@ -34,6 +34,7 @@ python-dotenv = "^1.0.0"
 chalice = "^1.29.0"
 mypy = "^1.4.1"
 aws-cdk-lib = "^2.88.0"
+googlesearch-python = "^1.2.3"
 
 [build-system]
 requires = ["poetry-core"]
