@@ -15,9 +15,6 @@ from chalicelib.services.s3_service import read_s3_object
 from chalicelib.utils import to_snake_key
 from sqlalchemy.sql import functions
 
-# porfolio_gsheet_url = "https://docs.google.com/spreadsheets/d/1Pbe9OPHhrVdDnjOurrTtSbUbLIHk1LsE_3R6s5pDLSw/edit?pli=1#gid=1375167053"
-# porfolio_sheet = gc.open_by_url(porfolio_gsheet_url)
-
 
 def get_p2p_records():
     p2p_records = bnb_ex.get_p2p_records()
@@ -87,11 +84,7 @@ def update_p2p_history_records():
 
     orders = [
         {to_snake_key(k): v for k, v in order.items()}
-        | {
-            "created_time": datetime.strptime(
-                order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
-            )
-        }
+        | {"created_time": datetime.strptime(order.get("Created Time"), "%Y-%m-%d %H:%M:%S")}
         for order in history_orders
     ]
 
@@ -126,9 +119,7 @@ def update_p2p_records(orders: list):
     exists_order_numbers = list(itertools.chain(*query_result))
 
     new_orders = (
-        order
-        for order in orders
-        if order.get("order_number") not in exists_order_numbers
+        order for order in orders if order.get("order_number") not in exists_order_numbers
     )
 
     cols = DepositRecords.__table__.columns.keys()
@@ -222,8 +213,8 @@ def get_funding_overview():
         current_assets_vnd - stables_amount * current_usd_price
     ) / capital_vnd_deployed
 
-    link_price = round(float(get_token_price(["LINKUSDT"])[0].get("price")), 1)
-    link_price_breakevent = round(link_price / (position_pnl_usd * 0.01), 1)
+    link_price = float(get_token_price(["LINKUSDT"])[0].get("price"))
+    link_price_breakevent = round(link_price / (position_pnl_usd), 1)
     link_position = current_assets.get("positionAmountVos")[0]
     link_position_value = round(float(link_position.get("amountInUSDT")))
     link_position_amount = float(link_position.get("amount"))
@@ -243,22 +234,8 @@ def get_funding_overview():
         "current_usd_price": current_usd_price,
         "current_assets": current_assets,
         "deposits": deposits,
-        "link_price": link_price,
+        "link_price": round(link_price, 1),
         "link_price_breakevent": link_price_breakevent,
         "link_position_value": link_position_value,
         "link_position_amount": link_position_amount,
     }
-
-
-# def funding_overview = get_funding_overview()
-
-
-#     response = dict(
-#         funding_overview,
-#         **{
-#             "link_price": link_price,
-#             "link_price_breakevent": link_price_breakevent,
-#             "link_position_value": link_position_value,
-#             "link_position_amount": link_position_amount,
-#         },
-#     )
