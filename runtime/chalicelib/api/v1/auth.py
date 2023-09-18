@@ -9,6 +9,7 @@ from chalicelib.controller.auth import (
     login_with_challenge,
     sign_up,
 )
+from chalicelib.events.base import EventType, post_event
 from chalicelib.logger_app import logger
 from chalicelib.schemas import (
     UserAuth,
@@ -37,8 +38,9 @@ def auth_login():
     params = auth_routes.current_app.current_request.json_body
     logger.debug(params)
     user = UserSignIn(**params)
-    reponse = login(user, authenticator)
-    return reponse
+    response = login(user, authenticator)
+    post_event(EventType.POST_USER_LOGIN, user.model_dump())
+    return response
 
 
 @auth_routes.route("/init_challenge", methods=["GET", "POST"])
@@ -94,7 +96,9 @@ def confirm_user():
     if not confirmation_code:
         raise BadRequestError("confirmation_code is required")
 
-    authenticator.confirm_user_sign_up(username=user.username, confirmation_code=confirmation_code)
+    authenticator.confirm_user_sign_up(
+        username=user.username, confirmation_code=confirmation_code
+    )
 
     return {"message": "Confirmed registration succeccfully ! You can login "}
 

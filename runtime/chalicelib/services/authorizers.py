@@ -158,9 +158,7 @@ class CognitoAuth:
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            res_msg = (
-                f"Couldn't resend confirmation to {username}. Here's why: {err_code}: {err_msg}"
-            )
+            res_msg = f"Couldn't resend confirmation to {username}. Here's why: {err_code}: {err_msg}"
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
 
@@ -177,9 +175,7 @@ class CognitoAuth:
         except ClientError as err:
             err_code = err.response["Error"]["Code"]
             err_msg = err.response["Error"]["Message"]
-            res_msg = (
-                f"Couldn't confirm sign up for  {username}. Here's why: {err_code}: {err_msg}"
-            )
+            res_msg = f"Couldn't confirm sign up for  {username}. Here's why: {err_code}: {err_msg}"
             logger.error(res_msg)
             raise ChaliceUnhandledError(res_msg)
         else:
@@ -201,7 +197,7 @@ class CognitoAuth:
                 raise UnauthorizedError(err_msg)
             raise BadRequestError(err.response)
 
-        return UserLoginResponse(**res).dict()
+        return UserLoginResponse(**res).model_dump()
 
     def init_challenge(self, username):
         """
@@ -283,7 +279,9 @@ class CognitoAuth:
             logger.exception(err.response["Error"])
             raise BadRequestError(err.response)
 
-    def confirm_forgot_password(self, username: str, confirmation_code: str, new_password: str):
+    def confirm_forgot_password(
+        self, username: str, confirmation_code: str, new_password: str
+    ):
         try:
             response = self.cognito_client.confirm_forgot_password(
                 ClientId=self.app_client_id,
@@ -308,6 +306,19 @@ class CognitoAuth:
         new_attrs: list[dict],
         meta_data: dict = {},
     ):
+        """
+        UserPoolId='string',
+        Username='string',
+        UserAttributes=[
+            {
+                'Name': 'string',
+                'Value': 'string'
+            },
+        ],
+        ClientMetadata={
+            'string': 'string'
+        }
+        """
         try:
             response = client.update_user_attributes(
                 UserAttributes=new_attrs,

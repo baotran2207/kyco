@@ -9,7 +9,7 @@
 # from chalicelib.services.authorizers import authenticator as current_authenticator
 
 
-# class User(Protocol):
+# class BatchAPI(Protocol):
 #     decorators = [login_required]
 
 #     # @swag_from(f"openapi/apidocs/{name}_get_all.yaml")

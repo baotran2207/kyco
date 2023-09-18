@@ -4,16 +4,8 @@ from typing import Optional
 
 from chalicelib.config import settings
 from chalicelib.enums import *
-from pydantic import (
-    BaseModel,
-    EmailStr,
-    HttpUrl,
-    SecretStr,
-    field_validator,
-    fields,
-    root_validator,
-    validator,
-)
+from chalicelib.logger_app import logger
+from pydantic import BaseModel, EmailStr, Field, validator
 
 
 class CustomBaseModel(BaseModel):
@@ -34,7 +26,7 @@ class UserAuth(CustomBaseModel):
     @validator("phone_number")
     def phone_validation(cls, v):
         regex = r"^(\+)[1-9][0-9\-\(\)\.]{9,15}$"
-        if v and not re.search(settings.PASSWORD_REGEX, v, re.I):
+        if v and not re.search(regex, v, re.I):
             raise ValueError("Phone Number Invalid.")
         return v
 
@@ -48,7 +40,9 @@ class UserAuth(CustomBaseModel):
             raise ValueError("phone_number or email invalid !")
 
         if phone_number and email:
-            logger.info("Both phone_number and email are valid ! Email is set for username")
+            logger.info(
+                "Both phone_number and email are valid ! Email is set for username"
+            )
         return username
 
 
@@ -72,7 +66,7 @@ class AuthorizedUser(UserAuth):
 
 
 class UserSignIn(UserAuth):
-    password: str | None = None
+    password: str | None = Field(default=None, repr=False, exclude=True)
 
 
 class UserSignInChallenge(UserAuth):
@@ -81,25 +75,25 @@ class UserSignInChallenge(UserAuth):
 
 
 class UserCreate(UserAuth):
-    password: str | None = None
+    password: str | None = Field(default=None, repr=False, exclude=True)
     user_info: dict | None = None
 
 
 class UserConfirmForgotPassword(UserAuth):
     confirmation_code: str
-    new_password: str
-    new_password2: str
+    new_password: str = Field(repr=False, exclude=True)
+    new_password2: str = Field(repr=False, exclude=True)
 
 
 class UserChangePassword(BaseModel):
     access_token: str
-    old_password: str
-    new_password: str
+    old_password: str = Field(repr=False, exclude=True)
+    new_password: str = Field(repr=False, exclude=True)
 
 
 class UserAdminChangePassword(UserAuth):
-    old_password: str
-    new_password: str
+    old_password: str = Field(repr=False, exclude=True)
+    new_password: str = Field(repr=False, exclude=True)
 
 
 class User(CustomBaseModel):

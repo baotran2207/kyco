@@ -68,7 +68,7 @@ def read_history_records(
     s3_bucket: str,
     s3_object_path: str,
 ):
-    body = read_s3_object(s3_bucket, s3_object_path)
+    body = read_s3_object(s3_bucket, "binance/c2c/20230110.csv")
     lines = body.decode("utf-8")
     buf = io.StringIO(lines)
     reader = csv.DictReader(buf)
@@ -77,18 +77,29 @@ def read_history_records(
 
 
 def update_p2p_history_records():
-    history_orders = read_history_records(
-        settings.S3_MAIN_BUCKET,
+    file_list = [
         "binance/c2c/binance_2021_2022.csv",
-    )
-
-    orders = [
-        {to_snake_key(k): v for k, v in order.items()}
-        | {"created_time": datetime.strptime(order.get("Created Time"), "%Y-%m-%d %H:%M:%S")}
-        for order in history_orders
+        "binance/c2c/20230110.csv",
     ]
 
-    return update_p2p_records(orders)
+    for f_path in file_list:
+        history_orders = read_history_records(
+            settings.S3_MAIN_BUCKET,
+            f_path,
+        )
+
+        orders = [
+            {to_snake_key(k): v for k, v in order.items()}
+            | {
+                "created_time": datetime.strptime(
+                    order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
+                )
+            }
+            for order in history_orders
+        ]
+        update_p2p_records(orders)
+
+    return True
 
 
 def update_bnb_p2p_records():
@@ -119,10 +130,12 @@ def update_p2p_records(orders: list):
     exists_order_numbers = list(itertools.chain(*query_result))
 
     new_orders = (
-        order for order in orders if order.get("order_number") not in exists_order_numbers
+        order
+        for order in orders
+        if order.get("order_number") not in exists_order_numbers
     )
 
-    cols = DepositRecords.__table__.columns.keys()
+    # cols = DepositRecords.__table__.columns.keys()
     added_order_numbers = []
     for order in new_orders:
         order_db = DepositRecords(
@@ -238,4 +251,5 @@ def get_funding_overview():
         "link_price_breakevent": link_price_breakevent,
         "link_position_value": link_position_value,
         "link_position_amount": link_position_amount,
+        "current_statable_assets": current_statable_assets,
     }

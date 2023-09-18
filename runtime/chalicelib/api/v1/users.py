@@ -20,8 +20,9 @@ users_blueprints = Blueprint(__name__)
 
 @users_blueprints.route("/user_info", methods=["GET"], authorizer=chalice_authorizer)
 def user_info():
-    headers = users_blueprints.current_app.current_request.headers
     current_user = get_current_user(users_blueprints.current_app.current_request)
+    logger.debug(current_user)
+
     return current_user.dict()
 
 

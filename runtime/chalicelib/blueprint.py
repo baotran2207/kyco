@@ -1,3 +1,4 @@
+# noqa: E402
 from chalice import Blueprint, Chalice
 from chalicelib.api.v1.auth import auth_routes
 from chalicelib.api.v1.dev import unname_bp

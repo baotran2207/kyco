@@ -1,11 +1,7 @@
-import json
-import random
-
-from chalice import AuthResponse, Blueprint, Chalice
-from chalice.app import Cron, Rate
+from chalice import Blueprint, Chalice
 from chalicelib.blueprint import events_blueprints, init_blueprint
 from chalicelib.config import settings
-from chalicelib.events.base import init_listeners
+from chalicelib.events.listeners import init_listeners
 from chalicelib.logger_app import logger
 from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
@@ -22,16 +18,16 @@ def authenticated():
 @app.route("/")
 def health():
     logger.info("app is ready!")
-    return {"message": "Hello there from tranthanhbao2207@gmail.com"}
+    return {"message": f"Hello there from {settings.WEBMASTER_EMAIL}"}
 
 
 init_listeners()
 init_blueprint(app)
-# init_middlewares(app)
+init_middlewares(app)
 
-############
-## Events ##
-############
+##########
+# Events #
+##########
 # ref:
 #     - https://github.com/aws/chalice/issues/1566
 # Due to bug in blueprint register , we can only register API endpoint,
