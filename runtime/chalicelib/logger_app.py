@@ -14,14 +14,6 @@ logger.propagate = False
 logging_level = settings.LOGGING_LEVEL
 
 
-class DevHandler(RichHandler):
-    def emit(self, record):
-        # record.levelname = record.levelname[:4]
-        super().emit(record)
-        if record.levelname == "ERROR":
-            print("send email Error")
-
-
 class ProdHandler(logging.StreamHandler):
     def emit(self, record):
         # record.levelname = record.levelname[:4]
@@ -31,6 +23,14 @@ class ProdHandler(logging.StreamHandler):
 
 
 if settings.ENV == AppEnv.dev.value:
+
+    class DevHandler(RichHandler):
+        def emit(self, record):
+            # record.levelname = record.levelname[:4]
+            super().emit(record)
+            if record.levelname == "ERROR":
+                print("send email Error")
+
     logger.handlers = [
         DevHandler(
             level=logging_level,
@@ -40,7 +40,7 @@ if settings.ENV == AppEnv.dev.value:
     ]
 else:
     FORMAT_STRING = "%(levelname)-8s [%(filename)s:%(lineno)d] %(message)s"
-    handler = logging.ProdHandler(sys.stdout)
+    handler = ProdHandler(sys.stdout)
     formatter = logging.Formatter(FORMAT_STRING)
     handler.setFormatter(formatter)
     handler.setLevel(logging_level)
