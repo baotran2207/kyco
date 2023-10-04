@@ -15,9 +15,6 @@ from chalicelib.services.s3_service import read_s3_object
 from chalicelib.utils import to_snake_key
 from sqlalchemy.sql import functions
 
-# porfolio_gsheet_url = "https://docs.google.com/spreadsheets/d/1Pbe9OPHhrVdDnjOurrTtSbUbLIHk1LsE_3R6s5pDLSw/edit?pli=1#gid=1375167053"
-# porfolio_sheet = gc.open_by_url(porfolio_gsheet_url)
-
 
 def get_p2p_records():
     p2p_records = bnb_ex.get_p2p_records()
@@ -71,7 +68,7 @@ def read_history_records(
     s3_bucket: str,
     s3_object_path: str,
 ):
-    body = read_s3_object(s3_bucket, s3_object_path)
+    body = read_s3_object(s3_bucket, "binance/c2c/20230110.csv")
     lines = body.decode("utf-8")
     buf = io.StringIO(lines)
     reader = csv.DictReader(buf)
@@ -80,22 +77,29 @@ def read_history_records(
 
 
 def update_p2p_history_records():
-    history_orders = read_history_records(
-        settings.S3_MAIN_BUCKET,
+    file_list = [
         "binance/c2c/binance_2021_2022.csv",
-    )
-
-    orders = [
-        {to_snake_key(k): v for k, v in order.items()}
-        | {
-            "created_time": datetime.strptime(
-                order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
-            )
-        }
-        for order in history_orders
+        "binance/c2c/20230110.csv",
     ]
 
-    return update_p2p_records(orders)
+    for f_path in file_list:
+        history_orders = read_history_records(
+            settings.S3_MAIN_BUCKET,
+            f_path,
+        )
+
+        orders = [
+            {to_snake_key(k): v for k, v in order.items()}
+            | {
+                "created_time": datetime.strptime(
+                    order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
+                )
+            }
+            for order in history_orders
+        ]
+        update_p2p_records(orders)
+
+    return True
 
 
 def update_bnb_p2p_records():
@@ -131,7 +135,7 @@ def update_p2p_records(orders: list):
         if order.get("order_number") not in exists_order_numbers
     )
 
-    cols = DepositRecords.__table__.columns.keys()
+    # cols = DepositRecords.__table__.columns.keys()
     added_order_numbers = []
     for order in new_orders:
         order_db = DepositRecords(
@@ -222,8 +226,8 @@ def get_funding_overview():
         current_assets_vnd - stables_amount * current_usd_price
     ) / capital_vnd_deployed
 
-    link_price = round(float(get_token_price(["LINKUSDT"])[0].get("price")), 1)
-    link_price_breakevent = round(link_price / (position_pnl_usd * 0.01), 1)
+    link_price = float(get_token_price(["LINKUSDT"])[0].get("price"))
+    link_price_breakevent = round(link_price / (position_pnl_usd), 1)
     link_position = current_assets.get("positionAmountVos")[0]
     link_position_value = round(float(link_position.get("amountInUSDT")))
     link_position_amount = float(link_position.get("amount"))
@@ -243,22 +247,9 @@ def get_funding_overview():
         "current_usd_price": current_usd_price,
         "current_assets": current_assets,
         "deposits": deposits,
-        "link_price": link_price,
+        "link_price": round(link_price, 1),
         "link_price_breakevent": link_price_breakevent,
         "link_position_value": link_position_value,
         "link_position_amount": link_position_amount,
+        "current_statable_assets": current_statable_assets,
     }
-
-
-# def funding_overview = get_funding_overview()
-
-
-#     response = dict(
-#         funding_overview,
-#         **{
-#             "link_price": link_price,
-#             "link_price_breakevent": link_price_breakevent,
-#             "link_position_value": link_position_value,
-#             "link_position_amount": link_position_amount,
-#         },
-#     )

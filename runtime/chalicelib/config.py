@@ -6,10 +6,12 @@ from typing import Any, Dict, Optional
 import boto3
 from chalice import CORSConfig
 from chalicelib.enums import AppEnv
-from pydantic import validator, HttpUrl, PostgresDsn
+from pydantic import HttpUrl, PostgresDsn, validator
 
-from pydantic_settings import BaseSettings
-
+try:
+    from pydantic_settings import BaseSettings
+except:
+    from pydantic import BaseSettings
 ENV = os.environ.get("ENV", "dev")
 
 if ENV == "dev":
@@ -28,9 +30,7 @@ class AppSettings(BaseSettings):
     PROJECT_NAME: str = os.environ.get("PROJECT_NAME", "kyco")
     ENV: str = os.environ["ENV"]
     # Init User
-    WEBMASTER_EMAIL: str = os.environ.get(
-        "WEBMASTER_EMAIL", "tranthanhbao2207@gmail.com"
-    )
+    WEBMASTER_EMAIL: str = os.environ.get("WEBMASTER_EMAIL")
     WEBMASTER_PASSWORD: str = os.environ.get("WEBMASTER_PASSWORD")
     # DB
     POSTGRES_SERVER: Optional[str] = os.environ.get("POSTGRES_SERVER")

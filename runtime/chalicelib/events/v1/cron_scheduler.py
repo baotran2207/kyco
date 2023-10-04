@@ -44,10 +44,9 @@ def auto_commit_cron(event):
 
 @cronjob_bp.schedule(Cron(0, "1,12", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
-    res = get_funding_overview()
     enqueue_send_email(
         to_emails=[settings.WEBMASTER_EMAIL],
         message_type=EmailType.PORFOLIO_OVERVIEW.value,
-        message_payload=response,
+        message_payload=get_funding_overview(),
     )
     logger.info("Sent funding overview !")

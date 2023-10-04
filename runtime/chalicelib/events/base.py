@@ -1,26 +1,28 @@
 import json
+from collections import defaultdict
 from itertools import chain
 
+from chalicelib.config import settings
+from chalicelib.enums import AppEnv
 from chalicelib.logger_app import logger
+from chalicelib.schemas.events import Subscriber as SubscriberSchema
 from chalicelib.services.sns_service import publish_message, sns_wrapper
 from chalicelib.services.sns_service import topic as sns_topic
 
 from .event_type import EventType
 
-subscribers = dict()
+subscribers = defaultdict()
 lambda_subscribers = dict()
 
 
-def subscribe(event_type: str, fn):
-    if event_type not in subscribers:
-        subscribers[event_type] = []
-    subscribers[event_type].append(fn)
-
-
-def unsubscribe(event_type: str, fn):
-    if event_type not in subscribers:
-        return
-    subscribers = [event for event in subscribers if event != event_type]
+def subscribe(subscriber: SubscriberSchema):
+    event_type = subscriber.event_type
+    function_name = subscriber.fn.__name__
+    listener_group_name = subscriber.listener_group_name
+    if subscriber.event_type not in subscribers:
+        subscribers[subscriber.event_type] = []
+    subscribers[subscriber.event_type].append(subscriber.fn)
+    logger.debug(f"Subscribe {listener_group_name} - {function_name}  to {event_type} ")
 
 
 def subscribe_lambda_subscribers(event_type: str, lambda_name: str):
@@ -37,34 +39,31 @@ def post_event(event_type: str, payload: dict):
             ),
         )
         return
+
     for fn in subscribers[event_type]:
-        fn(payload)
-
-    for lambda_name in lambda_subscribers[event_type]:
-        message_attributes = {
-            "lambda_name": lambda_name,
-            "payload": json.dumps(payload),
-        }
-        message_body = (
-            "message" in payload and payload["message"] or "message is not defined"
-        )
-        publish_message(message=message_body, attributes=message_attributes)
+        message_body = payload
+        message_attributes = {"event_type": event_type}
+        logger.debug(message_body)
+        # if settings.ENV == AppEnv.dev.value:
+        #     fn(payload)
+        # else:
+        publish_message(message=json.dumps(message_body), attributes=message_attributes)
 
 
-def init_listeners():
-    from chalicelib.events.v1.sns_events import setup_sns_event_handlers
+# def init_listeners():
+#     from chalicelib.events.v1.sns_events import setup_sns_event_handlers
 
-    from .listener.email_listener import setup_email_event_handlers
-    from .listener.log_listener import setup_log_event_handlers
-    from .listener.users_listener import setup_user_event_handlers
+#     from .listener.email_listener import setup_email_event_handlers
+#     from .listener.log_listener import setup_log_event_handlers
+#     from .listener.users_listener import setup_user_event_handlers
 
-    setup_log_event_handlers()
-    setup_email_event_handlers()
-    setup_user_event_handlers()
-    logger.info("init listensers")
+#     setup_log_event_handlers()
+#     setup_email_event_handlers()
+#     setup_user_event_handlers()
+#     logger.info("init listensers")
 
-    setup_sns_event_handlers()
-    logger.info("init sns subscribers")
+#     setup_sns_event_handlers()
+#     logger.info("init sns subscribers")
 
 
 # this is post deployment event

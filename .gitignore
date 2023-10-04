@@ -137,6 +137,7 @@ runtime/.chalice/config.json
 .DS_Store
 .prod
 .dev
+.staging
 
 static/private
 redux-workflow/.env.production

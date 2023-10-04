@@ -25,6 +25,7 @@ cognito_authorizer = CognitoUserPoolAuthorizer(
     settings.COGNITO_USER_POOL_NAME,
     header="Bearer",
     provider_arns=[settings.COGNITO_USER_POOL_ARN],
+    scopes=["openid", "email", "profile"],
 )
 
 
@@ -196,7 +197,7 @@ class CognitoAuth:
                 raise UnauthorizedError(err_msg)
             raise BadRequestError(err.response)
 
-        return UserLoginResponse(**res).dict()
+        return UserLoginResponse(**res).model_dump()
 
     def init_challenge(self, username):
         """
@@ -305,6 +306,19 @@ class CognitoAuth:
         new_attrs: list[dict],
         meta_data: dict = {},
     ):
+        """
+        UserPoolId='string',
+        Username='string',
+        UserAttributes=[
+            {
+                'Name': 'string',
+                'Value': 'string'
+            },
+        ],
+        ClientMetadata={
+            'string': 'string'
+        }
+        """
         try:
             response = client.update_user_attributes(
                 UserAttributes=new_attrs,

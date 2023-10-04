@@ -114,7 +114,10 @@ def send_email_queue(message_body: str, message_attributes: Optional[dict] = Non
 
 
 def parse_dict_to_sqs_message_attrs(dict_: dict) -> dict:
-    return {key: {"StringValue": str(val), "DataType": "String"} for key, val in dict_.items()}
+    return {
+        key: {"StringValue": str(val), "DataType": "String"}
+        for key, val in dict_.items()
+    }
 
 
 def delete_messages(queue, messages):
@@ -140,7 +143,9 @@ def delete_messages(queue, messages):
                 logger.info("Deleted %s", messages[int(msg_meta["Id"])].receipt_handle)
         if "Failed" in response:
             for msg_meta in response["Failed"]:
-                logger.warning("Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle)
+                logger.warning(
+                    "Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle
+                )
     except ClientError:
         logger.exception("Couldn't delete messages from queue %s", queue)
     else:

@@ -1,8 +1,9 @@
 # telegram_lib.py
-import urllib.parse
-import requests
 import json
+import urllib.parse
 from dataclasses import dataclass
+
+import requests
 from chalicelib.config import settings
 
 

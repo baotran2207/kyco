@@ -11,7 +11,7 @@ dynamodb_table = dynamodb.Table(settings.DYNAMO_TABLE_NAME)
 
 @dataclass
 class DynamoDB(object):
-    """docstring for DynamoDB"""
+    """single table design, we only use 1 table for all data"""
 
     conn = boto3.resource(
         "dynamodb",
@@ -116,9 +116,7 @@ class DynamoDB(object):
                     KeyConditionExpression=Key(sk).eq(skv) & Key(pk).eq(pkv),
                 )
             else:
-                response = table.query(
-                    KeyConditionExpression=Key(sk).eq(skv) & Key(pk).eq(pkv)
-                )
+                response = table.query(KeyConditionExpression=Key(sk).eq(skv) & Key(pk).eq(pkv))
         else:
             if index_name:
                 response = table.query(
@@ -149,9 +147,7 @@ class DynamoDB(object):
         else:
             return total_items
 
-    def scan_item(
-        self, table_name, attr1, attr2, total_items=None, start_key=None, table=None
-    ):
+    def scan_item(self, table_name, attr1, attr2, total_items=None, start_key=None, table=None):
         """
         Scan for an item with two attributes
 
@@ -175,9 +171,7 @@ class DynamoDB(object):
         a2 = attr2["name"]
         a2v = attr2["value"]
         if not start_key:
-            response = table.scan_item(
-                FilterExpression=Attr(a1).eq(a1v) & Attr(a2).eq(a2v)
-            )
+            response = table.scan_item(FilterExpression=Attr(a1).eq(a1v) & Attr(a2).eq(a2v))
         else:
             response = table.scan_item(
                 FilterExpression=Attr(a1).eq(a1v) & Attr(a2).eq(a2v),
