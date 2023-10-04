@@ -10,8 +10,7 @@ from aws_cdk import (
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3
 from aws_cdk import aws_s3_notifications as aws_s3_noti
-from aws_cdk import aws_sqs
-from aws_cdk import aws_sns
+from aws_cdk import aws_sns, aws_sqs
 
 try:
     from aws_cdk import core as cdk
@@ -37,6 +36,7 @@ class ChaliceApp(cdk.Stack):
         super().__init__(scope, id, **kwargs)
 
         self.env_vars = env_vars
+        self.ENV = self.env_vars.get("ENV")
         self.PREFIX_NAME = self.env_vars.get("PROJECT_NAME").capitalize()
         self.PREFIX_ID = f"{self.PREFIX_NAME}-id".lower()
 
@@ -71,9 +71,10 @@ class ChaliceApp(cdk.Stack):
             source_dir=RUNTIME_SOURCE_DIR,
             stage_config={
                 "lambda_memory_size": 256,
+                # "automatic_layer": True,
                 "environment_variables": {
                     "APP_TABLE_NAME": self.dynamodb_table.table_name,
-                    "ENV": "prod",
+                    "ENV": self.ENV,
                     "S3_MAIN_BUCKET": self.bucket.bucket_name,
                     "SQS_GENERIC": self.sqs_generic.queue_arn,
                     "SQS_SENDEMAIL": self.sqs_sendemail.queue_arn,

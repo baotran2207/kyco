@@ -45,26 +45,26 @@ def sns_base_handler(event: SNSEvent):
     logger.info(f"Successfully executed event_type: {event_type} ")
 
 
-@sns_bp.on_sns_message(
-    topic=settings.SNS_MAIN_TOPIC_NAME,
-    name="KycoSnsPostSigninHandler",
-)
-def sns_post_signin_handler(event: SNSEvent):
-    """will receive all message from sns"""
-    event_dict = event.to_dict()
-    logger.info(f"User {json.dumps(event_dict)}   in successfully ! ")
-    logger.info(event)
+# @sns_bp.on_sns_message(
+#     topic=settings.SNS_MAIN_TOPIC_NAME,
+#     name="KycoSnsPostSigninHandler",
+# )
+# def sns_post_signin_handler(event: SNSEvent):
+#     """will receive all message from sns"""
+#     event_dict = event.to_dict()
+#     logger.info(f"User {json.dumps(event_dict)}   in successfully ! ")
+#     logger.info(event)
 
 
-def setup_sns_event_handlers():
-    subscribe_lambda_subscribers(
-        EventType.POST_USER_LOGIN,
-        # sns_post_signin_handler,
-        "KycoSnsPostSigninHandler",
-    )
+# def setup_sns_event_handlers():
+#     subscribe_lambda_subscribers(
+#         EventType.POST_USER_LOGIN,
+#         # sns_post_signin_handler,
+#         "KycoSnsPostSigninHandler",
+#     )
 
-    subscribe_lambda_subscribers(
-        EventType.POST_USER_REGISTER,
-        # sns_post_signup_handler,
-        "KycoSnsPostSignupHandler",
-    )
+#     subscribe_lambda_subscribers(
+#         EventType.POST_USER_REGISTER,
+#         # sns_post_signup_handler,
+#         "KycoSnsPostSignupHandler",
+#     )

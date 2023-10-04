@@ -10,11 +10,18 @@ from dotenv import dotenv_values, load_dotenv
 from stacks.chaliceapp import ChaliceApp
 from stacks.ui import ReactApp
 
-load_dotenv("../.prod")
-
-env_vars = dict(dotenv_values("../.prod"))
-
+stacks_envs = [
+    # ("dev", "../.dev"),
+    # ("staging", "../.staging"),
+    ("prod", "../.prod"),
+]
 app = cdk.App()
+
+for env, env_file in stacks_envs:
+    env_vars = dict(dotenv_values(env_file))
+    app_name = f"Kyco{env.capitalize()}"
+    # ChaliceApp(app, app_name, env_vars=env_vars)
+
 
 # KycoDB(app, "kyco-db", env_vars=env_vars)
 ChaliceApp(app, "kyco-chalice-id", env_vars=env_vars)

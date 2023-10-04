@@ -28,8 +28,8 @@ if settings.ENV == AppEnv.dev.value:
         def emit(self, record):
             # record.levelname = record.levelname[:4]
             super().emit(record)
-            if record.levelname == "ERROR":
-                print("send email Error")
+            # if record.levelname == "ERROR":
+            #     print("Not send email Error")
 
     logger.handlers = [
         DevHandler(

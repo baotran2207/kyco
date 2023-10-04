@@ -7,8 +7,11 @@ import boto3
 from chalice import CORSConfig
 from chalicelib.enums import AppEnv
 from pydantic import HttpUrl, PostgresDsn, validator
-from pydantic_settings import BaseSettings
 
+try:
+    from pydantic_settings import BaseSettings
+except:
+    from pydantic import BaseSettings
 ENV = os.environ.get("ENV", "dev")
 
 if ENV == "dev":
