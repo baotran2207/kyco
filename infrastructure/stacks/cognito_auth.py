@@ -10,6 +10,9 @@ class CognitoAuth(cdk.Stack):
         super().__init__(scope, id, **kwargs)
 
         self.env_vars = env_vars
+        self.ENV = env_vars.get("ENV")
+        self.PREFIX_NAME = self.env_vars.get("PROJECT_NAME").capitalize()
+        self.PREFIX_ID = f"{self.PREFIX_NAME}-id".lower()
 
     # self.cognito_app_client = self.user_pool.add_client(
     #     id=f"{self.PREFIX_ID}-app-client",

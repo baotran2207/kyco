@@ -85,6 +85,9 @@ class ChaliceApp(cdk.Stack):
                     # "DYNAMODB_STREAM_ARN": DYNAMODB_STREAM_ARN,  # TODO: get DYNAMODB_STREAM_ARN from table
                 }
                 | self.env_vars,
+                "stages": {
+                    self.ENV: {},
+                },
             },
         )
         # grant policies
@@ -110,7 +113,11 @@ class ChaliceApp(cdk.Stack):
         # Allow chalice lambda send email with ses
         self.chalice_role.add_to_principal_policy(
             iam.PolicyStatement(
-                actions=["ses:SendEmail", "SES:SendRawEmail"],
+                actions=[
+                    "ses:SendEmail",
+                    "SES:SendRawEmail",
+                    "apigateway:GET",  # allow read api gateway to export swagger
+                ],
                 resources=["*"],
                 effect=iam.Effect.ALLOW,
             )

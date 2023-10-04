@@ -2,7 +2,10 @@
 
 # I.Introduction:
 
-    This is my personal use project
+This is my personal use project
+
+- endpoint : https://zr0fxh86b0.execute-api.ap-southeast-1.amazonaws.com/api
+- api routes: https://zr0fxh86b0.execute-api.ap-southeast-1.amazonaws.com/api/docs
 
 # II. Project components
 

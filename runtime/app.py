@@ -1,13 +1,24 @@
-from chalice import Blueprint, Chalice
+from chalice import Blueprint, Chalice, Response
 from chalicelib.blueprint import events_blueprints, init_blueprint
 from chalicelib.config import settings
 from chalicelib.events.listeners import init_listeners
 from chalicelib.logger_app import logger
 from chalicelib.middlewares import init_middlewares
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.utils import get_swagger_ui
 
 app = Chalice(app_name=settings.PROJECT_NAME, configure_logs=False)
 app.api.cors = True
+
+
+init_listeners()
+init_blueprint(app)
+init_middlewares(app)
+
+
+@app.route("/", methods=["GET"])
+def init():
+    return {"message": f"Hello there from {settings.WEBMASTER_EMAIL}"}
 
 
 @app.route("/user-pools", methods=["GET"], authorizer=chalice_authorizer)
@@ -15,15 +26,17 @@ def authenticated():
     return {"message": "authorized"}
 
 
-@app.route("/")
+@app.route("/docs", methods=["GET"])
 def health():
-    logger.info("app is ready!")
-    return {"message": f"Hello there from {settings.WEBMASTER_EMAIL}"}
+    html = get_swagger_ui(app)
+    return Response(
+        body=html,
+        status_code=200,
+        headers={"Content-Type": "text/html"},
+    )
 
 
-init_listeners()
-init_blueprint(app)
-init_middlewares(app)
+logger.info("app is ready!")
 
 ##########
 # Events #
