@@ -10,6 +10,8 @@ One exeption is RMDB database ,due to aurora is not really serverless (and not f
 
 - runtime (`backend`): powered by `aws chalice` for both restful api and event-driven :
   endpoint : https://zr0fxh86b0.execute-api.ap-southeast-1.amazonaws.com/api
+  docs : https://zr0fxh86b0.execute-api.ap-southeast-1.amazonaws.com/api/docs
+  
 - kycoui (`frontend`): reactjs (with nextjs), currently only export to static site and hosted on s3
   endpoint : https://dl4uq37pbr4d2.cloudfront.net/ (WIP)
 
