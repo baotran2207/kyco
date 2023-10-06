@@ -82,8 +82,8 @@ def init_blueprint(app: Chalice):
     app.register_blueprint(users_blueprints)
 
     app.register_blueprint(porfolio_bp, url_prefix="/porfolio")
-    # if settings.ENV == "dev":
-    app.register_blueprint(unname_bp, url_prefix="/dev")
+    if settings.ENV == "dev":
+        app.register_blueprint(unname_bp, url_prefix="/dev")
     app.register_blueprint(swagger_api)
 
     # ref:
@@ -97,4 +97,9 @@ def init_blueprint(app: Chalice):
     return app
 
 
-events_blueprints = [sqs_bp, cognito_post_config_bp, cronjob_bp, sns_bp]
+events_blueprints = [
+    sqs_bp,
+    cognito_post_config_bp,
+    cronjob_bp,
+    sns_bp,
+]

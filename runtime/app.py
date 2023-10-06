@@ -36,8 +36,6 @@ def health():
     )
 
 
-logger.info("app is ready!")
-
 ##########
 # Events #
 ##########
@@ -67,3 +65,5 @@ def handle_s3_event(event):
 # app.register_blueprint(s3_events)
 for event_bp in events_blueprints:
     app.register_blueprint(event_bp)
+
+logger.info(f"{settings.PROJECT_NAME} is ready! Env: {settings.ENV}")

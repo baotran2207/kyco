@@ -4,11 +4,12 @@ try:
 except ImportError:
     import aws_cdk as cdk
 
-from dotenv import dotenv_values, load_dotenv
+from dotenv import dotenv_values
 
 # from stacks.db import KycoDB
 from stacks.chaliceapp import ChaliceApp
-from stacks.ui import ReactApp
+
+# from stacks.ui import ReactApp
 
 stacks_envs = [
     # ("dev", "../.dev"),
