@@ -9,8 +9,6 @@ from dotenv import dotenv_values
 # from stacks.db import KycoDB
 from stacks.chaliceapp import ChaliceApp
 
-# from stacks.ui import ReactApp
-
 stacks_envs = [
     # ("dev", "../.dev"),
     # ("staging", "../.staging"),

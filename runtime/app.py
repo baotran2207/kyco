@@ -34,6 +34,7 @@ def health():
         status_code=200,
         headers={"Content-Type": "text/html"},
     )
+    return {"message": f"Hello there from {settings.WEBMASTER_EMAIL}"}
 
 
 ##########
