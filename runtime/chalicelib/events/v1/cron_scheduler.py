@@ -6,7 +6,7 @@ from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
-from chalicelib.services.email_sender import enqueue_send_email
+from chalicelib.services.email_sender import send_email
 from chalicelib.services.github_service import update_file
 from chalicelib.services.porfolio import (
     get_funding_overview,
@@ -32,7 +32,7 @@ def warm_up_db_everyday(event):
     return "This should be invoked every weekday at 6pm"
 
 
-@cronjob_bp.schedule(Rate(8, unit=Rate.HOURS))
+@cronjob_bp.schedule(Rate(18, unit=Rate.HOURS))
 def auto_commit_cron(event):
     if random.choice([True, False]):
         filename = "autocommit.txt"
@@ -42,9 +42,9 @@ def auto_commit_cron(event):
         logger.info("No commit !")
 
 
-@cronjob_bp.schedule(Cron(0, "1,12", "?", "*", "*", "*"))
+@cronjob_bp.schedule(Cron(0, "0,12", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
-    enqueue_send_email(
+    send_email(
         to_emails=[settings.WEBMASTER_EMAIL],
         message_type=EmailType.PORFOLIO_OVERVIEW.value,
         message_payload=get_funding_overview(),

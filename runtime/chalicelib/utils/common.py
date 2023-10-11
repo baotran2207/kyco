@@ -28,37 +28,3 @@ def generate_otp():
 
 def to_snake_key(char: str) -> str:
     return char.replace(" ", "_").lower()
-
-
-def parse_sqs_record_to_email_messages(record_dict: dict) -> dict:
-    message_attributes = record_dict.get("messageAttributes", {})
-
-    cc_emails = json.loads(
-        message_attributes.get("cc_emails", {}).get("stringValue", "[]")
-    )
-    bcc_emails = json.loads(
-        message_attributes.get("bcc_emails", {}).get("stringValue", "[]")
-    )
-    reply_tos = json.loads(
-        message_attributes.get("reply_tos", {}).get("stringValue", "[]")
-    )
-
-    email_type = message_attributes.get("message_type", {}).get("stringValue", "")
-    email_payload = json.loads(
-        message_attributes.get("message_payload", {}).get("stringValue", "")
-    )
-    res = {
-        # required
-        "to_emails": json.loads(
-            message_attributes.get("to_emails", {}).get("stringValue")
-        ),
-        "source": message_attributes.get("source", {}).get("stringValue"),
-        "email_type": email_type,
-        "email_payload": email_payload,
-        # non required
-        "cc_emails": cc_emails,
-        "bcc_emails": bcc_emails,
-        "reply_tos": reply_tos,
-    }
-
-    return res

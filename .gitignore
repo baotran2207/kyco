@@ -138,6 +138,7 @@ runtime/.chalice/config.json
 .prod
 .dev
 .staging
+.test
 
 static/private
 redux-workflow/.env.production

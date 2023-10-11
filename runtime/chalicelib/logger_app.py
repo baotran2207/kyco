@@ -5,7 +5,7 @@ import sys
 from chalicelib.config import settings
 from chalicelib.enums import AppEnv
 
-if AppEnv.dev.value == settings.ENV:
+if settings.ENV in [AppEnv.dev.value, AppEnv.test.value]:
     from rich.logging import RichHandler
 
 
@@ -22,7 +22,7 @@ class ProdHandler(logging.StreamHandler):
             print("send email Error")
 
 
-if settings.ENV == AppEnv.dev.value:
+if settings.ENV in [AppEnv.dev.value, AppEnv.test.value]:
 
     class DevHandler(RichHandler):
         def emit(self, record):

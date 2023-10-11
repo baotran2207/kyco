@@ -19,6 +19,11 @@ if ENV == "dev":
 
     load_dotenv("../.dev")
 
+if ENV == "test":
+    from dotenv import load_dotenv
+
+    load_dotenv("../.test")
+
 
 def get_ssm_object(name) -> dict:
     ssm_client = boto3.client("ssm")

@@ -10,6 +10,7 @@ class Status(Enum):
 class AppEnv(Enum):
     prod: str = "prod"
     dev: str = "dev"
+    test: str = "test"
     staging: str = "staging"
 
 

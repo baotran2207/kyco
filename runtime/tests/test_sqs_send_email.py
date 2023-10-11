@@ -1,62 +1,39 @@
 import json
 
-from chalicelib.utils import parse_sqs_record_to_email_messages
+from chalicelib.config import settings
+from chalicelib.enums import EmailType
+from chalicelib.events.v1.sqs_events import (
+    _handle_sqs_email,
+    parse_sqs_record_to_email_messages,
+)
+from chalicelib.services.email_render import get_email_template
 
-# from chalicelib.events.v1.sqs_events import parse_sqs_record_to_email_messages
-message_str = {
-    "Body": {
-        "Html": {
-            "Charset": "UTF-8",
-            "Data": 'This message body contains HTML formatting. It can, for example, contain links like this one: <a class="ulink" href="http://docs.aws.amazon.com/ses/latest/DeveloperGuide" target="_blank">Amazon SES Developer Guide</a>.',
-        },
-        "Text": {
-            "Charset": "UTF-8",
-            "Data": "This is the message body in text format.",
-        },
-    },
-    "Subject": {
-        "Charset": "UTF-8",
-        "Data": "Test email",
-    },
-}
-sqs_record = {
-    "messageId": "482daa94-8005-4761-8eab-d923f1823e9b",
-    "receiptHandle": "",
-    "body": "sending email",
+email_message_fixture = {
+    "messageId": "357ef346-f369-47e6-a67a-656148e297ff",
+    "receiptHandle": "AQEBapZ6yWax1xBMUGRHMnoNUqYUd6o3T5HYsAyfK3ivzcg2VxeNPTJApY1GHDkioqWK1+Xvndz4T44UQwnUJJcETWKXQft43IvgSLZA/grATdaPOkKRmw1yKFkyxLiuZzah1mtXTNYp9iuUfhOR4PTweZRd5bjPednaGc7D1Ry+B7STjp2h2eNt8bZbhr5VsBKNaWZlpFLfq5DDnP5hZRaAFTS638j9JkAMJs+3EVvj5eMmWrPSC1ezoshU6CpJwnkrKv9/P0HlQ1d528VWoby6ekZOTn3Q6vRqvxRamVF9PlNCUGxp56KahFF0G93ahdjcck96sjvXWiXhG4hvfOmtS/uDpORn6l//nli/PWY4cAqS77eVO2Rv9lvxzncNk8w2HleCFIFLFxnmcCMOFF2lLQ==",
+    "body": "sending email NEW_OTP",
     "attributes": {
-        "ApproximateReceiveCount": "1381",
-        "AWSTraceHeader": "Root=1-64c5f1e2-68d97fd165f9d67b1b5b9534;Parent=5653e3fb338c17ea;Sampled=0;Lineage=55db472c: 0",
-        "SentTimestamp": "1690694118989",
-        "SenderId": "AROA2UDD5TARNC7GJDOXE:kyco-chalice-id-AutoSendPorfolioSummary-ql5YbMlIoqby",
-        "ApproximateFirstReceiveTimestamp": "1690694118989",
+        "ApproximateReceiveCount": "2",
+        "AWSTraceHeader": "Root=1-65263746-320c824c58b9e15b51a84f99;Parent=7dcee31f3d8a37a0;Sampled=0;Lineage=b92f77be:0",
+        "SentTimestamp": "1697003336218",
+        "SenderId": "AROA2UDD5TARNC7GJDOXE:kyco-chalice-id-CreateAuthChallenge-LEyiQTWMzQ01",
+        "ApproximateFirstReceiveTimestamp": "1697003336219",
     },
     "messageAttributes": {
         "to_emails": {
-            "stringValue": "['tranthanhbao2207@gmail.com']",
+            "stringValue": '["tranthanhbao2207@gmail.com"]',
             "stringListValues": [],
             "binaryListValues": [],
             "dataType": "String",
         },
-        "email_message": {
-            "stringValue": json.dumps(message_str),
+        "message_payload": {
+            "stringValue": '{"otp_code": "1607", "template_name": "KycoNEW_OTP"}',
             "stringListValues": [],
             "binaryListValues": [],
             "dataType": "String",
         },
-        "cc_emails": {
-            "stringValue": "None",
-            "stringListValues": [],
-            "binaryListValues": [],
-            "dataType": "String",
-        },
-        "reply_tos": {
-            "stringValue": "None",
-            "stringListValues": [],
-            "binaryListValues": [],
-            "dataType": "String",
-        },
-        "bcc_emails": {
-            "stringValue": "None",
+        "message_type": {
+            "stringValue": "NEW_OTP",
             "stringListValues": [],
             "binaryListValues": [],
             "dataType": "String",
@@ -68,20 +45,30 @@ sqs_record = {
             "dataType": "String",
         },
     },
-    "md5OfMessageAttributes": "b8470eeb4c6b2b662867ae4a8a561019",
-    "md5OfBody": "afd4531025a150bff11f6a5149414b69",
+    "md5OfMessageAttributes": "86c507d9d4caf5d6cd91256791ff2985",
+    "md5OfBody": "7b731c18c5298e39d947e563074a0aba",
     "eventSource": "aws:sqs",
-    "eventSourceARN": "arn:aws:sqs:ap-southeast-1: 730353997858:KycoSendemail",
+    "eventSourceARN": "arn:aws:sqs:ap-southeast-1:730353997858:KycoSendemail",
     "awsRegion": "ap-southeast-1",
 }
 
 
 def test_parse_sqs_record_to_email_messages():
-    a = ["tranthanhbao2207@gmail.com", "examples"]
-    b = json.dumps(a)
-    print(a)
-    print(b)
-    print(json.loads(b))
+    res = parse_sqs_record_to_email_messages(email_message_fixture)
     # res = parse_sqs_record_to_email_messages(sqs_record)
-    assert True
-    # print(res)
+    assert res is True
+
+
+def test_get_email_template():
+    PROJECT_NAME = settings.PROJECT_NAME
+
+    assert (
+        get_email_template(EmailType.NEW_OTP.value)
+        == f"{PROJECT_NAME.capitalize()}{EmailType.NEW_OTP.value}"
+    )
+
+
+def test_handle_sqs_email():
+    res = _handle_sqs_email(email_message_fixture)
+
+    assert res == True

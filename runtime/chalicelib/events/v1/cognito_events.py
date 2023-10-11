@@ -7,7 +7,8 @@ from chalice import Blueprint
 from chalicelib.config import settings
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
-from chalicelib.services.email_sender import enqueue_send_email
+from chalicelib.services.email_render import get_email_template
+from chalicelib.services.email_sender import send_email
 from chalicelib.utils import generate_otp
 
 cognito_post_config_bp = Blueprint(__name__)
@@ -71,11 +72,15 @@ def create_auth_challenge(event, context):
     }
     # send_notify
     email = event["request"]["userAttributes"].get("email")
+    logger.info(f"template name {get_email_template(EmailType.NEW_OTP.value)}")
     if email:
-        enqueue_send_email(
+        send_email(
             to_emails=[email],
             message_type=EmailType.NEW_OTP.value,
-            message_payload={"otp_code": otp},
+            message_payload={
+                "otp_code": otp,
+                "template_name": get_email_template(EmailType.NEW_OTP.value),
+            },
         )
 
     res = event | {"response": custom_response}
@@ -114,4 +119,6 @@ def define_auth_challenge(event, context):
 def verify_auth_challenge(event, context):
     expected_answer = event["request"]["privateChallengeParameters"]["challengeAnswer"]
     user_answer = event["request"]["challengeAnswer"]
-    return event | {"response": {"answerCorrect": str(expected_answer) == str(user_answer)}}
+    return event | {
+        "response": {"answerCorrect": str(expected_answer) == str(user_answer)}
+    }

@@ -10,6 +10,7 @@ from aws_cdk import (
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3
 from aws_cdk import aws_s3_notifications as aws_s3_noti
+from aws_cdk import aws_ses as ses
 from aws_cdk import aws_sns, aws_sqs
 
 try:
@@ -17,18 +18,22 @@ try:
 except ImportError:
     import aws_cdk as cdk
 
+from typing import Sequence
+
 from chalice.cdk import Chalice
 
 RUNTIME_SOURCE_DIR = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), os.pardir, "runtime"
 )
+# }
+from emails_templates_config import EmailTemplate, emails_templates
+from loguru import logger
 
+# logger.setLevel(logging.DEBUG)
 # COGNITO_TRIGGER_HOOKS = {
 #     "pre_sign_up": "PreSignUp",
 #     "post_authentication": "PostAuthentication",
 #     "pre_authentication": "PreAuthentication",
-
-# }
 
 
 class ChaliceApp(cdk.Stack):
@@ -40,6 +45,10 @@ class ChaliceApp(cdk.Stack):
         self.PREFIX_NAME = self.env_vars.get("PROJECT_NAME").capitalize()
         self.PREFIX_ID = f"{self.PREFIX_NAME}-id".lower()
 
+        self.ses_emails_templates = [
+            self._create_email_templates(email_template)
+            for email_template in emails_templates
+        ]
         self.dynamodb_table = self._create_ddb_table()
         # self.parameter_store_config = self._create_ssm()
         self.bucket = self._create_s3_bucket()
@@ -115,15 +124,27 @@ class ChaliceApp(cdk.Stack):
             iam.PolicyStatement(
                 actions=[
                     "ses:SendEmail",
-                    "SES:SendRawEmail",
+                    "ses:SendRawEmail",
+                    "ses:SendTemplatedEmail",
                     "apigateway:GET",  # allow read api gateway to export swagger
                 ],
                 resources=["*"],
                 effect=iam.Effect.ALLOW,
             )
         )
-        # for raw_func_name, lambda_func_name in COGNITO_TRIGGER_HOOKS.items():
-        #     print(self.chalice.get_function(function_name=lambda_func_name))
+
+        # Allow chalice lambda to send ses template
+        # for ses_email_template in self.ses_emails_templates:
+        #     logger.debug(ses_email_template.get_att("resource.arn").to_string())
+        #     self.chalice_role.add_to_principal_policy(
+        #         iam.PolicyStatement(
+        #             actions=[
+        #                 "ses:SendTemplatedEmail",
+        #             ],
+        #             resources=[ses_email_template.get_att("resource.arn")],
+        #             effect=iam.Effect.ALLOW,
+        #         )
+        #     )
 
     def _create_s3_bucket(self):
         return aws_s3.Bucket(
@@ -149,10 +170,29 @@ class ChaliceApp(cdk.Stack):
         return dynamodb_table
 
     def _create_sqs(self, id: str, sqs_name: str) -> aws_sqs.Queue:
-        # Function timeout <= SQS timeout . Currently function timeout is 60s, TODO: reduce both function timeout and queue timeout
+        # Function timeout <= SQS timeout . Currently function timeout is 60s,
+        # TODO: reduce both function timeout and queue timeout
         return aws_sqs.Queue(
             self,
             f"{self.PREFIX_ID}-{id}",
             queue_name=f"{self.PREFIX_NAME}{sqs_name.capitalize()}",
             visibility_timeout=Duration.seconds(60),
         )
+
+    def _create_email_templates(
+        self,
+        email_template: EmailTemplate,
+    ) -> ses.CfnTemplate:
+        cfn_template = ses.CfnTemplate(
+            self,
+            f"{self.PREFIX_NAME}{email_template.template_name}CfnEmailTemplate",
+            template=ses.CfnTemplate.TemplateProperty(
+                subject_part=email_template.subject_part,
+                # the properties below are optional
+                html_part=email_template.html_part,
+                template_name=f"{self.PREFIX_NAME}_{email_template.template_name}",
+                text_part=email_template.text_part,
+            ),
+        )
+
+        return cfn_template

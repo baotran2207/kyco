@@ -1,3 +1,6 @@
+from typing import Literal
+
+from chalicelib.config import settings
 from chalicelib.enums import EmailType
 
 
@@ -83,7 +86,18 @@ def render_porfolio_message(values: dict) -> dict:
     )
 
 
-EMAIL_RENDERS = {
-    EmailType.NEW_OTP.value: get_new_otp_message,
-    EmailType.PORFOLIO_OVERVIEW.value: render_porfolio_message,
+PREFIX = settings.PROJECT_NAME.capitalize()
+SES_EMAIL_TEMPLATES = {
+    EmailType.NEW_OTP.value: f"{PREFIX}_{EmailType.NEW_OTP.value}",
+    EmailType.PORFOLIO_OVERVIEW.value: f"{PREFIX}_{EmailType.PORFOLIO_OVERVIEW.value}",
 }
+
+
+def get_ses_email_template_name(email_type: str) -> str:
+    if email_type not in SES_EMAIL_TEMPLATES:
+        raise ValueError(f"Email type {email_type} is not supported yet")
+
+    return SES_EMAIL_TEMPLATES.get(email_type)
+
+
+get_email_template = get_ses_email_template_name

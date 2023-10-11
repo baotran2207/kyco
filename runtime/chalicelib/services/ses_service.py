@@ -49,7 +49,7 @@ class SesMailSender:
         self,
         to_emails: list[EmailStr],
         template_name: str,
-        template_data: dict,
+        template_data: dict | str,
         source: EmailStr,
         cc_emails: list[EmailStr] | None = None,
         bcc_emails: list[EmailStr] | None = None,
@@ -66,6 +66,12 @@ class SesMailSender:
 
         :return: The ID of the message, assigned by Amazon SES.
         """
+        template_payload = (
+            json.dumps(template_data)
+            if isinstance(template_data, dict)
+            else template_data
+        )
+
         send_args = {
             "Source": source,
             "Destination": {
@@ -74,7 +80,7 @@ class SesMailSender:
                 "BccAddresses": bcc_emails,
             },
             "Template": template_name,
-            "TemplateData": json.dumps(template_data),
+            "TemplateData": template_payload,
         }
         if reply_tos is not None:
             send_args["ReplyToAddresses"] = reply_tos
@@ -88,7 +94,9 @@ class SesMailSender:
                 to_emails,
             )
         except ClientError:
-            logger.exception("Couldn't send templated mail from %s to %s.", source, to_emails)
+            logger.exception(
+                "Couldn't send templated mail from %s to %s.", source, to_emails
+            )
             raise
         else:
             return message_id

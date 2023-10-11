@@ -6,7 +6,7 @@ authors = ["Bao Tran <tranthanhbao2207@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-kyco = "tasks.cli:main"
+kyco = "runtime.tasks.cli:main"
 
 [tool.poetry.dependencies]
 python = "3.10.9"
@@ -54,3 +54,10 @@ exclude = "runtime/migrations"
 profile = "black"
 skip_glob = "runtime/migrations/*"
 # exclude = "runtime/migrations"
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "runtime/tests",
+]
