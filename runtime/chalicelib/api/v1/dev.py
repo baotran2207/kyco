@@ -1,5 +1,4 @@
 from chalice import BadRequestError, Blueprint
-from sqlalchemy.sql import text
 from chalicelib.config import settings
 from chalicelib.db.session import SessionLocal
 from chalicelib.events.base import add_filters_to_lambda_subscribers, post_event
@@ -7,6 +6,7 @@ from chalicelib.events.event_type import EventType
 from chalicelib.logger_app import logger
 from chalicelib.services.github_service import update_file
 from chalicelib.services.sqs_service import send_message
+from sqlalchemy.sql import text
 
 # from chalicelib.services.porfolio import summary_sheet
 
@@ -58,3 +58,8 @@ def post_deploy_update_sns_subscribers():
 def post_deploy_update_sns_subscribers():
     post_event(EventType.POST_USER_REGISTER, {"username": "baotran2207"})
     return {"message": "ok"}
+
+
+"""
+https://nominatim.openstreetmap.org/search?q=%C4%90%C6%B0%E1%BB%9Dng%20Nguy%E1%BB%85n%20V%C4%83n%20Linh,%20Ph%C6%B0%E1%BB%9Dng%20T%C3%A2n%20Thu%E1%BA%ADn%20T%C3%A2y,%20Qu%E1%BA%ADn%207,%20Tp%20H%E1%BB%93%20Ch%C3%AD%20Minh&format=json&polygon=1&addressdetails=1
+"""

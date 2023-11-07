@@ -67,9 +67,7 @@ class SesMailSender:
         :return: The ID of the message, assigned by Amazon SES.
         """
         template_payload = (
-            json.dumps(template_data)
-            if isinstance(template_data, dict)
-            else template_data
+            json.dumps(template_data) if isinstance(template_data, dict) else template_data
         )
 
         send_args = {
@@ -81,6 +79,7 @@ class SesMailSender:
             },
             "Template": template_name,
             "TemplateData": template_payload,
+            "ConfigurationSetName": "ses_failure",
         }
         if reply_tos is not None:
             send_args["ReplyToAddresses"] = reply_tos
@@ -93,11 +92,9 @@ class SesMailSender:
                 source,
                 to_emails,
             )
-        except ClientError:
-            logger.exception(
-                "Couldn't send templated mail from %s to %s.", source, to_emails
-            )
-            raise
+        except ClientError as e:
+            logger.exception("Couldn't send templated mail from %s to %s.", source, to_emails)
+            raise e
         else:
             return message_id
 

@@ -90,11 +90,7 @@ def update_p2p_history_records():
 
         orders = [
             {to_snake_key(k): v for k, v in order.items()}
-            | {
-                "created_time": datetime.strptime(
-                    order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
-                )
-            }
+            | {"created_time": datetime.strptime(order.get("Created Time"), "%Y-%m-%d %H:%M:%S")}
             for order in history_orders
         ]
         update_p2p_records(orders)
@@ -130,9 +126,7 @@ def update_p2p_records(orders: list):
     exists_order_numbers = list(itertools.chain(*query_result))
 
     new_orders = (
-        order
-        for order in orders
-        if order.get("order_number") not in exists_order_numbers
+        order for order in orders if order.get("order_number") not in exists_order_numbers
     )
 
     # cols = DepositRecords.__table__.columns.keys()
@@ -232,12 +226,21 @@ def get_funding_overview():
     link_position_value = round(float(link_position.get("amountInUSDT")))
     link_position_amount = float(link_position.get("amount"))
 
+    deposit_usd = "${:,.2f}".format(capital_usd)
+    deposit_vnd = "${:,.2f}".format(capital_vnd)
+    average_buy_price = "VND{:,.0f}".format(round(deposits.get("average_buy_price")))
+
+    stables_amount_vnd = "VND{:,.0f}".format(round(stables_amount * current_usd_price))
+
+    value_in_usd = "${:,.2f}".format(round(current_assets_usd, 2))
+    value_in_vnd = "VND{:,.0f}".format(round(current_assets_vnd, 0))
     return {
-        "current_amount_in_vnd": current_assets_vnd,
-        "current_amount_in_usd": current_assets_usd,
-        "capital_usd_deployed": capital_usd_deployed,
-        "capital_vnd_deployed": capital_vnd_deployed,
+        "value_in_usd": value_in_usd,
+        "value_in_vnd": value_in_vnd,
+        "capital_usd_deployed": "${:,.2f}".format(round(capital_usd_deployed)),
+        "capital_vnd_deployed": "VND{:,.0f}".format(round(capital_vnd_deployed)),
         "stables_amount": stables_amount,
+        "stables_amount_vnd": stables_amount_vnd,
         "PNL": {
             "pnl_in_vnd": f"{pnl_vnd:,.2%}",
             "pnl_in_usd": f"{pnl_usd:,.2%}",
@@ -252,4 +255,7 @@ def get_funding_overview():
         "link_position_value": link_position_value,
         "link_position_amount": link_position_amount,
         "current_statable_assets": current_statable_assets,
+        "deposit_usd": deposit_usd,
+        "deposit_vnd": deposit_vnd,
+        "average_buy_price": average_buy_price,
     }

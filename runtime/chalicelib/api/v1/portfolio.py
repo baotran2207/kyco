@@ -5,6 +5,7 @@ from chalicelib.config import settings
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
 from chalicelib.services.authorizers import chalice_authorizer
+from chalicelib.services.email_render import get_email_template
 from chalicelib.services.email_sender import send_email
 from chalicelib.services.porfolio import (
     deposit_overview,
@@ -37,8 +38,11 @@ def trigger_update():
 @porfolio_bp.route("/overview", authorizer=chalice_authorizer)
 def get_funding_overview_route():
     response = get_funding_overview()
+    template_name = get_email_template(EmailType.PORFOLIO_OVERVIEW.value)
+
     send_email(
         to_emails=[settings.WEBMASTER_EMAIL],
+        template_name=template_name,
         message_type=EmailType.PORFOLIO_OVERVIEW.value,
         message_payload=response,
     )

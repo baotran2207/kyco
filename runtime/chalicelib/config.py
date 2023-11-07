@@ -64,9 +64,7 @@ class AppSettings(BaseSettings):
     # Security
     COGNITO_USER_POOL_NAME: str = os.environ.get("COGNITO_USER_POOL_NAME", "")
     COGNITO_USER_POOL_ARN: str = os.environ.get("COGNITO_USER_POOL_ARN", "")
-    COGNITO_USER_POOL_ID: str = (
-        COGNITO_USER_POOL_ARN and COGNITO_USER_POOL_ARN.split("/")[-1] or ""
-    )
+    COGNITO_USER_POOL_ID: str = COGNITO_USER_POOL_ARN and COGNITO_USER_POOL_ARN.split("/")[-1] or ""
     COGNITO_APP_CLIENT_ID: str = os.environ.get("COGNITO_APP_CLIENT_ID", "")
     secret_key: str = os.environ.get("SecretStr")
     jwt_token_prefix: str = "Token"  # token? Bearer ?
@@ -124,17 +122,7 @@ class AppSettings(BaseSettings):
     GITHUB_TOKEN: Optional[str] = os.environ.get("GITHUB_TOKEN")
 
     # logging
-    LOGGING_LEVEL: Optional[str] = None
-
-    @validator("LOGGING_LEVEL", pre=False)
-    def set_logging_level(cls, val: Optional[str], values: Dict[str, Any]) -> Any:
-        if isinstance(val, str):
-            return val
-
-        env = values.get("ENV")
-        if env == AppEnv.dev.value:
-            return logging.DEBUG
-        return logging.INFO
+    LOGGING_LEVEL: Optional[str] = os.environ.get("LOGURU_LEVEL")
 
     # binance
     BINANCE_API_KEY: str = os.environ.get("BINANCE_API_KEY")

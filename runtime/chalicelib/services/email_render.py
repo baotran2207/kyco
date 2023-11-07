@@ -32,14 +32,10 @@ def render_porfolio_message(values: dict) -> dict:
     deposit_vnd = "VND{:,.0f}".format(round(values.get("deposits").get("capital_vnd")))
     deposit_usd = "${:,.2f}".format(round(values.get("deposits").get("capital_usd")))
 
-    average_buy_price = "VND{:,.0f}".format(
-        round(values.get("deposits").get("average_buy_price"))
-    )
+    average_buy_price = "VND{:,.0f}".format(round(values.get("deposits").get("average_buy_price")))
     current_usd_price = "VND{:,.2f}".format(round(values.get("current_usd_price")))
     capital_usd_deployed = "${:,.2f}".format(round(values.get("capital_usd_deployed")))
-    capital_vnd_deployed = "VND{:,.0f}".format(
-        round(values.get("capital_vnd_deployed"))
-    )
+    capital_vnd_deployed = "VND{:,.0f}".format(round(values.get("capital_vnd_deployed")))
     stables_amount = "${:,.2f}".format(round(values.get("stables_amount")))
     stables_amount_vnd = "VND{:,.0f}".format(
         round(values.get("stables_amount") * values.get("current_usd_price"))

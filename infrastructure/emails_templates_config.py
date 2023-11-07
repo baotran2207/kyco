@@ -48,7 +48,7 @@ NEW_OTP_TEMPLATE = EmailTemplate(
 
 PORFOLIO_OVERVIEW_TEMPLATE = EmailTemplate(
     template_name="PORFOLIO_OVERVIEW",
-    subject_part="Your secret login code",
+    subject_part="Your portfolio overview",
     html_part="",
 )
 

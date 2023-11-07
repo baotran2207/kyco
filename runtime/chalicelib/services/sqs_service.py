@@ -4,7 +4,8 @@ import boto3
 from botocore.exceptions import ClientError
 from chalicelib.config import settings
 from chalicelib.logger_app import logger
-from chalicelib.schemas.messages import SQSMESSAGE
+
+# from chalicelib.schemas.messages import SQSMESSAGE
 
 sqs = boto3.resource("sqs")
 # snippet-end:[python.example_code.sqs.message_wrapper_imports]
@@ -106,18 +107,20 @@ def send_messages(queue, messages):
 
 def send_email_queue(message_body: str, message_attributes: Optional[dict] = None):
     sqs_email = get_queue(settings.SQS_SENDEMAIL)
-    parse_dict_to_sqs_message_attrs(message_attributes)
+    sqs_message_attributes = parse_dict_to_sqs_message_attrs(message_attributes)
     logger.info(f"Sending message to sqs {message_body} ")
-    return send_message(
-        sqs_email, message_body, parse_dict_to_sqs_message_attrs(message_attributes)
-    )
+    return send_message(sqs_email, message_body, sqs_message_attributes)
 
 
 def parse_dict_to_sqs_message_attrs(dict_: dict) -> dict:
-    return {
-        key: {"StringValue": str(val), "DataType": "String"}
-        for key, val in dict_.items()
-    }
+    return {key: {"StringValue": str(val), "DataType": "String"} for key, val in dict_.items()}
+
+
+def parse_sqs_message_attrs_to_dict(sqs_message_attrs: dict[str:dict]) -> dict[str:str]:
+    res = {}
+    for key, val in sqs_message_attrs.items():
+        res[key] = val.get("StringValue") or val.get("stringValue")
+    return res
 
 
 def delete_messages(queue, messages):
@@ -143,9 +146,7 @@ def delete_messages(queue, messages):
                 logger.info("Deleted %s", messages[int(msg_meta["Id"])].receipt_handle)
         if "Failed" in response:
             for msg_meta in response["Failed"]:
-                logger.warning(
-                    "Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle
-                )
+                logger.warning("Could not delete %s", messages[int(msg_meta["Id"])].receipt_handle)
     except ClientError:
         logger.exception("Couldn't delete messages from queue %s", queue)
     else:

@@ -47,31 +47,32 @@
         "editor.defaultFormatter": "ms-python.black-formatter",
 
     },
-    "typescript.tsdk": "./node_modules/typescript/lib", // we want to use the TS server from our node_modules folder to control its version
-    "python.linting.enabled": true,
-    "python.formatting.provider": "black",
-    "python.formatting.blackArgs": [
-        "--line-length", "88"
-    ],
-    "isort.args": ["--profile", "black"],
-    "typescript.preferences.quoteStyle": "single",
-    "typescriptHero.imports.stringQuoteStyle": "'",
-    "prettier.printWidth": 120,
-    "prettier.singleQuote": true,
-    "editor.codeActionsOnSave": {
-        "source.fixAll.eslint": true
+    "[typescriptreact]": {
+        "editor.defaultFormatter": "vscode.typescript-language-features"
     },
-    "python.languageServer": "Default",
-    "python.linting.pylintEnabled": false,
-    "python.linting.flake8Enabled": true,
-    "python.linting.flake8Path": ".venv/bin/flake8",
-    // "cucumberautocomplete.skipDocStringsFormat": true,
-    "python.linting.flake8Args": [
-        // Match what black does.
-        "--max-line-length=88",
+    "editor.inlineSuggest.enabled": true,
+
+    "black-formatter.args": [
+        "--line-length=100"
     ],
-    "python.linting.flake8CategorySeverity.F": "Error",
-    "python.linting.flake8CategorySeverity.E": "Error",
-    "typescript.preferences.importModuleSpecifier": "relative",
-    "debug.javascript.usePreview": false,
+    "flake8.args": [
+        "--max-line-length=88"
+    ],
+    "isort.args": [
+        "--profile",
+        "black"
+    ],
+    "flake8.severity":{
+        "convention": "Information",
+        "error": "Error",
+        "fatal": "Error",
+        "refactor": "Hint",
+        "warning": "Warning",
+        "info": "Information"
+    },
+    "terminal.integrated.env.osx": {
+        "FIG_NEW_SESSION": "1"
+    },
+    "editor.accessibilitySupport": "off",
+    "editor.formatOnType": true
 }

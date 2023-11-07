@@ -9,9 +9,10 @@ psycopg[binary]
 # cffi==1.15.0; platform_machine == "x86_64"
 # aws-psycopg2; platform_machine == "x86_64"
 PyJWT
-celery
-graphene>=3.1
+# celery
+# graphene>=3.1
 PyGithub
-binance-connector
-gspread
+binance-connector==3.3.1
+# gspread
 ksuid
+loguru

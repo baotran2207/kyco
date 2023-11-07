@@ -1,10 +1,8 @@
 """
     Coginto events need to be configurea via console once
 """
-import json
 
 from chalice import Blueprint
-from chalicelib.config import settings
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
 from chalicelib.services.email_render import get_email_template
