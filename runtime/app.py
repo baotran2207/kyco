@@ -13,7 +13,7 @@ app.api.cors = True
 
 init_listeners()
 init_blueprint(app)
-init_middlewares(app)
+# init_middlewares(app)
 
 
 @app.route("/", methods=["GET"])

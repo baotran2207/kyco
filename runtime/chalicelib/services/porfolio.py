@@ -15,27 +15,26 @@ from chalicelib.services.s3_service import read_s3_object
 from chalicelib.utils import to_snake_key
 from sqlalchemy.sql import functions
 
+# def get_p2p_records():
+#     p2p_records = bnb_ex.get_p2p_records()
 
-def get_p2p_records():
-    p2p_records = bnb_ex.get_p2p_records()
-
-    return p2p_records
-
-
-def get_p2p_overview():
-    """
-    https://binance-docs.github.io/apidocs/spot/en/#get-c2c-trade-history-user_data
-    binance only return 30 days
-    """
-    p2p_records = bnb_ex.get_p2p_records()
-    return {
-        "records": p2p_records,
-        "total_records": len(p2p_records),
-    }
+#     return p2p_records
 
 
-def get_saving_accounts_overview():
-    return bnb_ex.get_saving_accounts_overview()
+# def get_p2p_overview():
+#     """
+#     https://binance-docs.github.io/apidocs/spot/en/#get-c2c-trade-history-user_data
+#     binance only return 30 days
+#     """
+#     p2p_records = bnb_ex.get_p2p_records()
+#     return {
+#         "records": p2p_records,
+#         "total_records": len(p2p_records),
+#     }
+
+
+# def get_saving_accounts_overview():
+#     return bnb_ex.get_saving_accounts_overview()
 
 
 def get_token_price(token_pairs):
@@ -90,7 +89,11 @@ def update_p2p_history_records():
 
         orders = [
             {to_snake_key(k): v for k, v in order.items()}
-            | {"created_time": datetime.strptime(order.get("Created Time"), "%Y-%m-%d %H:%M:%S")}
+            | {
+                "created_time": datetime.strptime(
+                    order.get("Created Time"), "%Y-%m-%d %H:%M:%S"
+                )
+            }
             for order in history_orders
         ]
         update_p2p_records(orders)
@@ -126,7 +129,9 @@ def update_p2p_records(orders: list):
     exists_order_numbers = list(itertools.chain(*query_result))
 
     new_orders = (
-        order for order in orders if order.get("order_number") not in exists_order_numbers
+        order
+        for order in orders
+        if order.get("order_number") not in exists_order_numbers
     )
 
     # cols = DepositRecords.__table__.columns.keys()
@@ -199,7 +204,7 @@ def get_funding_overview():
         [
             float(asset.get("amount", 0))
             for asset in assets_amount
-            if asset["asset"] in ["USDT", "BUSD", "USDC", "DAI"]
+            if asset["asset"] in ["USDT", "BUSD", "USDC", "DAI", "FDUSD"]
         ]
     )
 
@@ -221,6 +226,9 @@ def get_funding_overview():
     ) / capital_vnd_deployed
 
     link_price = float(get_token_price(["LINKUSDT"])[0].get("price"))
+    link_price_btc = float(get_token_price(["LINKBTC"])[0].get("price"))
+    link_price_eth = float(get_token_price(["LINKETH"])[0].get("price"))
+
     link_price_breakevent = round(link_price / (position_pnl_usd), 1)
     link_position = current_assets.get("positionAmountVos")[0]
     link_position_value = round(float(link_position.get("amountInUSDT")))
@@ -251,6 +259,8 @@ def get_funding_overview():
         "current_assets": current_assets,
         "deposits": deposits,
         "link_price": round(link_price, 1),
+        "link_price_btc": (link_price_btc * 100000000),
+        "link_price_eth": round(link_price_eth, 5),
         "link_price_breakevent": link_price_breakevent,
         "link_position_value": link_position_value,
         "link_position_amount": link_position_amount,

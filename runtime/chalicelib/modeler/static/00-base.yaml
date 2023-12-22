@@ -1,0 +1,68 @@
+
+Zuser:
+  TAGS:
+    - HISTORIZED(daterange)
+    - ATTR_LOG
+    - CLASS(ApplicationUser)
+    - API
+
+  UNIQUE INDEXES:
+    u_zuser_name:
+      - name
+    u_zuser_email:
+      - email
+
+  COLUMN_ALIASES:
+    username: name
+    last_name: lastname
+    first_names: firstname
+    start_date: startdate
+
+  ATTRIBUTES:
+    - name: varchar(64) required unique
+    - firstname: varchar(64) required
+    - lastname: varchar(64) required
+    - email: varchar(64) required unique
+    - address: varchar(64)
+    - phone: varchar(64)
+    - startdate: date
+    - force_change_password: bool
+    - internal: bool required
+      TAGS:
+        - ui_hidden
+    - person_id: references D_person(id)
+    - external_person_id: references E_external_person(id)
+    - status: enum Status
+      TAGS:
+        - ui_readonly
+    - liferay_uid: varchar(64)
+      TAGS:
+        - ui_hidden
+    - password: varchar(256)
+      TAGS:
+        - UI_TYPE(password)
+        - ui_required
+
+    - usergroups: tie G_user_group_Zuser
+
+    - system:
+      - roles: tie Zuser_Zrole
+
+    - orgunit_access:
+      - organizations: tie Zuser_I_org_unit
+      - external_organizations: tie Zuser_E_ext_org
+
+# NOTE: unused table
+Zreport:
+  TAGS:
+    - HISTORIZED(daterange)
+    - CLASS(Report)
+    - API
+  ATTRIBUTES:
+    - name: varchar(64) required
+    - name5: varchar(64)
+    - name6: varchar(64)
+    - description: text
+    - reportfile: varchar(128) required
+    - url: varchar(256) required
+    - required_userights: tie Zreport_Useright

@@ -1,0 +1,55 @@
+Status:
+  TAGS:
+    - ENUM
+    - HISTORIZED(daterange)
+    - LOCALIZED
+  values(en):
+    1: Active
+    2: New request
+    3: Suspended
+    4: Terminated
+    5: Rejected
+  values(fi):
+    1: Aktiivinen
+    2: Uusi tilaus
+    3: Jäädytetty
+    4: Päättynyt
+    5: Hylätty
+  values(vi):
+    1: hoạt động
+    2: Yêu cầu mới
+    3: Đình chỉ
+    4: Chấm dứt
+    5: Từ chối
+
+System_status:
+  TAGS:
+    - ENUM
+    - HISTORIZED(daterange)
+    - LOCALIZED
+  values(en):
+    1: Running
+    2: Stopped
+    3: Error
+  values(fi):
+    1: Running
+    2: Stopped
+    3: Error
+
+System_application_type:
+  TAGS:
+    - ENUM
+    - HISTORIZED(daterange)
+    - LOCALIZED
+  values(en):
+    1: Active Directory
+    2: Azure AD
+    3: Novell
+    4: OpenLDAP
+    99: Other
+  values(fi):
+    1: Active Directory
+    2: Azure AD
+    3: Novell
+    4: OpenLDAP
+    99: Muu hakemisto

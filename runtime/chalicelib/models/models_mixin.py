@@ -1,9 +1,19 @@
 import uuid as uuid_lib
+from typing import List
 
 from chalicelib.db.base_class import Base
-from chalicelib.enums import *
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, column, func
-from sqlalchemy.orm import relationship
+from chalicelib.enums import Status
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    String,
+    column,
+    func,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 
 class User(Base):
@@ -15,16 +25,18 @@ class User(Base):
     hashed_password = Column(String)
     status = Column(Integer, default=Status.Active.value)
     is_superuser = Column(Boolean(), default=False)
-    created_at = Column(DateTime(timezone=True), default=func.now())
-    lastchanged_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # used_token = relationship(
-    #     "UsedToken", back_populates="user", cascade="all, delete, delete-orphan"
-    # )
+    used_tokens: Mapped[List["UsedToken"]] = relationship(
+        "UsedToken",
+        back_populates="user",
+        cascade="all, delete, delete-orphan",
+    )
 
 
 class UsedToken(Base):
     id = Column(String, primary_key=True, index=True, default=uuid_lib.uuid4)
     used_token = Column(String)
-    created_at = Column(DateTime(timezone=True), default=func.now())
-    # owned_by = re
+
+    # user_id: Mapped[int] = mapped_column(ForeignKey("user.id"))
+    user_id = Column(String, ForeignKey("user.id"))
+    user: Mapped["User"] = relationship(User, back_populates="used_tokens")

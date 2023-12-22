@@ -40,6 +40,13 @@ def send_templated_email():
     )
 
 
+@app.command()
+def mdm():
+    from chalicelib.modeler import mdm
+
+    mdm.main()
+
+
 def main():
     app()
 

@@ -13,8 +13,8 @@ python = "3.10.9"
 boto3 = "^1.28.14"
 requests = "^2.31.0"
 # psycopg2-binary = "^2.9.6"
-pydantic = {extras = ["email"], version = "^1"}
-# pydantic-settings = "^2.0.2"
+pydantic = {extras = ["email"], version = "^2"}
+pydantic-settings = "^2"
 pyjwt = "^2.8.0"
 pygithub = "^1.59.0"
 binance-connector = "^3.1.1"
@@ -23,6 +23,7 @@ aws-lambda-powertools = "^2.22.0"
 sqlalchemy = "^2.0.19"
 # graphene = "^3.1"
 psycopg = {extras = ["binary"], version = "^3.1.12"}
+chalice = "^1.30.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^6.0.0"

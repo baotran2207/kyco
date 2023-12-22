@@ -17,3 +17,19 @@ class AppEnv(Enum):
 class EmailType(Enum):
     NEW_OTP = "NEW_OTP"
     PORFOLIO_OVERVIEW = "PORFOLIO_OVERVIEW"
+
+
+class LendingType(Enum):
+    DAILY = "DAILY"
+    ACTIVITY = "ACTIVITY"
+    CUSTOMIZED_FIXED = "CUSTOMIZED_FIXED"
+
+
+class OrderStatus(Enum):
+    COMPLETED = "COMPLETED"
+    PENDING = "PENDING"
+
+
+class P2POrderType(Enum):
+    BUY = "BUY"
+    SELL = "SELL"

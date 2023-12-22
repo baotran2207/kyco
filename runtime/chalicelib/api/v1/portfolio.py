@@ -2,42 +2,33 @@ import json
 
 from chalice import Blueprint
 from chalicelib.config import settings
+from chalicelib.controller.porfolio import porfolio_controller
+from chalicelib.controller.wallet import binance_controller
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
 from chalicelib.services.authorizers import chalice_authorizer
 from chalicelib.services.email_render import get_email_template
 from chalicelib.services.email_sender import send_email
-from chalicelib.services.porfolio import (
-    deposit_overview,
-    get_funding_overview,
-    get_p2p_overview,
-    get_p2p_pricing,
-    get_p2p_records,
-    get_token_price,
-    update_bnb_p2p_records,
-    update_p2p_history_records,
-)
 
 porfolio_bp = Blueprint(__name__)
 
 
 @porfolio_bp.route("/assets", authorizer=chalice_authorizer)
 def get_summary():
-    return get_saving_accounts_overview()
+    return binance_controller.get_savings_account()
 
 
 @porfolio_bp.route("/trigger-update", methods=["GET"])
 def trigger_update():
-    his_res = update_p2p_history_records()
+    # his_res = binance_controller.update_p2p_history_records()
 
-    orders = update_bnb_p2p_records()
-
+    porfolio_controller.update_p2p_records()
     return "ok"
 
 
 @porfolio_bp.route("/overview", authorizer=chalice_authorizer)
 def get_funding_overview_route():
-    response = get_funding_overview()
+    response = binance_controller.get_funding_overview()
     template_name = get_email_template(EmailType.PORFOLIO_OVERVIEW.value)
 
     send_email(
@@ -59,4 +50,4 @@ def get_funding_records(token_pair):
 
 @porfolio_bp.route("/p2p-pricing")
 def get_p2p_current_pricing():
-    return get_p2p_pricing()
+    return binance_controller.get_p2p_pricing()

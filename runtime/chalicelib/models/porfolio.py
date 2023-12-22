@@ -3,7 +3,7 @@ import uuid as uuid_lib
 from chalicelib.db.base_class import Base
 from chalicelib.enums import *
 from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String, column, func
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 """
 Order Number,Order Type,Asset Type,Fiat Type,Total Price,Price,Quantity,Exchange rate,Couterparty,Status,Created Time
@@ -16,19 +16,18 @@ class DepositRecords(Base):
     ref:https://c2c.binance.com/en/fiatOrder?tab=1&page=1
     """
 
-    order_number = Column(String, primary_key=True, index=True)
-    order_type = Column(String, index=True)
-    asset_type = Column(String)
-    fiat_type = Column(String)
-    total_price = Column(Float)
-    price = Column(Float)  ## real exchange rate
-    quantity = Column(Float)
-    exchange_rate = Column(String, default="")  ## not use
-    counter_party = Column(String)
-    order_status = Column(String)
-    created_time = Column(DateTime(timezone=True))
+    order_number: Mapped[str] = mapped_column(String(50), index=True, primary_key=True)
+    order_type: Mapped[str] = mapped_column(String(5), index=True)
+    asset_type: Mapped[str] = mapped_column(String(10))
+    fiat_type: Mapped[str] = mapped_column(String(10))
 
-    created_at = Column(DateTime(timezone=True), default=func.now())
+    total_price: Mapped[float] = mapped_column(Float)
+    price: Mapped[float] = mapped_column(Float)
+    quantity: Mapped[float] = mapped_column(Float)
+    exchange_rate: Mapped[str] = mapped_column(String(10), default="")
+    counter_party: Mapped[str] = mapped_column(String(20), nullable=True)
+    order_status: Mapped[str] = mapped_column(String(20))
+    created_time = Column(DateTime(timezone=True))
 
 
 # class AutoinvestRecords(Base):

@@ -11,6 +11,7 @@ from collections import OrderedDict, defaultdict, namedtuple
 from functools import wraps
 from io import StringIO
 from itertools import chain
+from pdb import set_trace
 from pprint import pformat
 
 import jinja2
@@ -19,184 +20,33 @@ import yaml
 
 json_load = json.load
 json_loads = json.loads
+from icecream import ic
+from loguru import logger
+
+logger.info("asdad")
+
+try:
+    basestring
+except NameError:
+    basestring = str
 
 
-class MySQLTriggerExtension(jinja2.ext.Extension):
-    tags = frozenset(["trigger"])
+from .mdm_loaders import EnvLoader, yaml_load
 
-    def __init__(self, environment):
-        super(MySQLTriggerExtension, self).__init__(environment)
-        D = defaultdict(list)
-        environment.globals.update(Triggers=D)
-        environment.extend(
-            install_trigger_globals=self._install,
-            triggers=D,
-        )
-
-    def _install(self, _globals):
-        self.environment.globals.update(**_globals)
-        self.environment.extend(**_globals)
-
-    def parse(self, parser):
-        lineno = next(parser.stream).lineno
-        args = [parser.parse_expression()]
-        assert parser.stream.skip_if("comma")
-        args.append(parser.parse_expression())
-        body = parser.parse_statements(["name:endtrigger"], drop_needle=True)
-        return jinja2.nodes.CallBlock(
-            self.call_method("_create_trigger", args), [], [], body
-        ).set_lineno(lineno)
-
-    def _create_trigger(self, table, mode, caller):
-        rv = caller()
-        self.environment.triggers[(table, mode)].append(rv)
-        return ""
-
-
-class MySQLSprocExtension(jinja2.ext.Extension):
-    tags = frozenset(["sproc"])
-
-    def parse(self, parser):
-        lineno = next(parser.stream).lineno
-        args = [
-            jinja2.nodes.Const(None),
-            jinja2.nodes.Const([]),
-            jinja2.nodes.Const(False),
-        ]
-        if parser.stream.current.type is not "block_end":
-            args[0] = parser.parse_expression()
-            if parser.stream.skip_if("comma"):
-                args[1] = parser.parse_expression()
-            if parser.stream.skip_if("comma"):
-                args[2] = parser.parse_expression()
-
-        body = parser.parse_statements(["name:endsproc"], drop_needle=True)
-        return jinja2.nodes.CallBlock(
-            self.call_method("_create_sproc", args), [], [], body
-        ).set_lineno(lineno)
-
-    def _create_sproc(self, name, params, verbose, caller):
-        drop = anonymous = autoexec = name is None
-        header = footer = ""
-        if verbose:
-            header = "select 'Executing procedure: {}' as dise_proc_meta;".format(name)
-            footer = (
-                "select 'Finished executing procedure: {}' as dise_proc_meta;".format(
-                    name
-                )
-            )
-
-        if anonymous and not name:
-            name = gensym()
-        assert name, name
-        return """
-delimiter //
-drop procedure if exists {name};
-create procedure {name}({params})
-proc:begin
-{header}
-{body}
-{footer}
-end//
-delimiter ;
-{autoexec}
-{drop}
-""".format(
-            body=caller(),
-            header=header,
-            footer=footer,
-            name=name,
-            params=", ".join(params),
-            autoexec="call {};".format(name) if autoexec else "",
-            drop="drop procedure {};".format(name) if drop else "",
-        )
-
-
-class MySQLFuncExtension(jinja2.ext.Extension):
-    tags = frozenset(["func"])
-
-    def parse(self, parser):
-        lineno = next(parser.stream).lineno
-        args = [
-            jinja2.nodes.Const(None),
-            jinja2.nodes.Const([]),
-            jinja2.nodes.Const([]),
-        ]
-        if parser.stream.current.type is not "block_end":
-            args[0] = parser.parse_expression()
-            if parser.stream.skip_if("comma"):
-                args[1] = parser.parse_expression()
-            if parser.stream.skip_if("comma"):
-                args[2] = parser.parse_expression()
-
-        body = parser.parse_statements(["name:endfunc"], drop_needle=True)
-        return jinja2.nodes.CallBlock(
-            self.call_method("_create_func", args), [], [], body
-        ).set_lineno(lineno)
-
-    def _create_func(self, name, params, modifiers, caller):
-        assert name, name
-        return """
-delimiter //
-drop function if exists {name};
-create function {name}({params})
-{modifiers}
-begin
-{body}
-end//
-delimiter ;
-""".format(
-            body=caller(),
-            name=name,
-            modifiers="\n".join(modifiers),
-            params=", ".join(params),
-        )
-
-
-CACHE_DIR = "{}/.cache/{}".format(os.environ["HOME"], "m3")
-if not os.path.exists(CACHE_DIR):
-    os.mkdir(CACHE_DIR)
-
-
-class OrderedJsonEncoder(json.JSONEncoder):
-    def encode(self, o):
-        if isinstance(o, OrderedDict):
-            return "{%s}" % ",".join(
-                "%s:%s" % (self.encode(str(k)), self.encode(v)) for k, v in o.items()
-            )
-        else:
-            return json.JSONEncoder.encode(self, o)
-
-
-json_encoder = OrderedJsonEncoder()
-
-
-def yaml_load(stream, Loader=yaml.Loader, object_pairs_hook=OrderedDict):
-    "Ordered YAML loader"
-
-    class OrderedLoader(Loader):
-        pass
-
-    def construct_mapping(loader, node):
-        loader.flatten_mapping(node)
-        return object_pairs_hook(loader.construct_pairs(node))
-
-    OrderedLoader.add_constructor(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        construct_mapping,
-    )
-
-    s = StringIO(stream.read())
-    sha256 = hashlib.sha256(s.getvalue().encode("utf-8")).hexdigest()
-    cache_path = "{}/{}.json".format(CACHE_DIR, sha256)
-    if os.path.exists(cache_path):
-        return json_load(open(cache_path, "r"))
-    else:
-        obj = yaml.load(s, OrderedLoader)
-        with open(cache_path + ".tmp", "w") as fh:
-            fh.write(json_encoder.encode(obj))
-        os.rename(cache_path + ".tmp", cache_path)
-        return obj
+##### schemas.py
+from .schemas import (
+    Backref,
+    BlockElement,
+    ForeignKey,
+    InverseForeignKey,
+    LogicalColumn,
+    LogicalEnum,
+    LogicalTable,
+    LogicalTie,
+    SystemDefinition,
+    TableTieRelation,
+    VirtualAttribute,
+)
 
 
 class attrdict(dict):
@@ -211,19 +61,18 @@ class attr_defaultdict(defaultdict):
 
 Tags = attr_defaultdict(OrderedDict)
 mdm_attributes = {}
-mdm_csv_path = "{}/mdm.csv".format(os.path.dirname(__file__))
+# mdm_csv_path = "{}/mdm.csv".format(os.path.dirname(__file__))
+
+# gensym_idx = 0
 
 
-gensym_idx = 0
+# def gensym():
+#     global gensym_idx
+#     gensym_idx += 1
+#     return "_M3_GENSYM_{}".format(gensym_idx)
 
 
-def gensym():
-    global gensym_idx
-    gensym_idx += 1
-    return "_M3_GENSYM_{}".format(gensym_idx)
-
-
-Backref = namedtuple("Backref", "attribute ref_table ref_id ref_type")
+# Backref = namedtuple("Backref", "attribute ref_table ref_id ref_type")
 
 
 def get_backref(table, colname, block):
@@ -244,7 +93,7 @@ def get_globals():
         table_name=table_name,
         log_table_name=log_table_name,
         mysql_type=mysql_type,
-        java_type=java_type,
+        # java_type=java_type,
         column_maxsize=column_maxsize,
         python_class_name=python_class_name,
         java_class_name=java_class_name,
@@ -265,25 +114,73 @@ def get_globals():
         sorted=sorted,
         set=set,
         pformat=pformat,
-        gensym=gensym,
+        # gensym=gensym,
         get_backref=get_backref,
         Systems=Systems,
         environ=attr_defaultdict(lambda: None, os.environ),
     )
 
     def _assert(x, y=None):
-        assert x, y
+        print(x)
+        print(y)
+        assert x
+        assert y
 
-    G["assert"] = _assert
+    G["do_assert"] = _assert
 
     for k, v in os.environ.items():
         if k in G:
-            # print('Warning: skipping overlapping env var:', k, file=sys.stderr)
+            ## logger.debug("Warning: skipping overlapping env var:", k, file=sys.stderr)
             continue
         G[k] = v
 
     G["DEBUG"] = G.get("DEBUG", False)
     return G
+
+
+def setup_globals():
+    # Remove overridden Enums:
+    Enums[:] = sorted(
+        (
+            x
+            for i, x in enumerate(Enums)
+            if i == max(j for j, z in enumerate(Enums) if x.name == z.name)
+        ),
+        key=lambda x: x.name,
+    )
+    # Remove overridden Tables:
+    Tables[:] = sorted(
+        (
+            x
+            for i, x in enumerate(Tables)
+            if i == max(j for j, z in enumerate(Tables) if x.name == z.name)
+        ),
+        key=lambda x: x.name,
+    )
+
+    global dTables, dEnums, dEnumCodes, dTies, dTableTies, dColumns, dColumnAliases
+    dTables = attrdict({table.name: table for table in Tables})
+    dEnums = attrdict({enum.name: enum for enum in Enums})
+    dEnumCodes = attrdict(
+        {enum.name: attrdict((v, k) for k, v in enum.values.items()) for enum in Enums}
+    )
+    dTies = attrdict({tie.name: tie for tie in Ties})
+    dTableTies = attrdict(
+        {table.name: frozenset(t.relation_name for t in table.ties) for table in Tables}
+    )
+    dColumns = attrdict(
+        {
+            table.name: attrdict({col.name: col for col in table.all_columns})
+            for table in Tables
+        }
+    )
+
+    # db_name aliases:
+    for table in Tables:
+        dColumns[table.name].update({col.db_name: col for col in table.all_columns})
+
+    # Hack for irregular naming:
+    # mdm_attributes['E_person'] = mdm_attributes['E_external_person']
 
 
 def eval_template(path, **kw):
@@ -315,34 +212,6 @@ def mysql_type(col):
         return "bigint"
 
     return type_
-
-
-_java_types = dict(
-    bool="boolean",
-    int="int",
-    bigint="long",
-    smallint="int",
-    serial="int",
-    bigserial="bigint",
-    date="Date",
-    timestamptz="Date",
-    real="double",
-    bytea="byte[]",
-)
-
-
-def java_type(col):
-    if col.fk:
-        return "long"
-
-    elif (
-        col.type.startswith("varchar")
-        or col.type.startswith("char")
-        or col.type.endswith("text")
-    ):
-        return "String"
-
-    return _java_types[col.type]
 
 
 def column_maxsize(col, fallback):
@@ -432,34 +301,35 @@ def get_column_blocks(cols):
     return BlockElement(value=d, type="block")
 
 
-LogicalTable = namedtuple(
-    "LogicalTable",
-    """
-name localized id_type inverse_fks valid_type internal historized pk attributes all_columns
-old_audit ties blocks field_blocks tags
-backrefs
-virtual_attributes
-indexes
-unique_indexes
-""",
-)
-LogicalColumn = namedtuple(
-    "LogicalColumn",
-    """
-name db_name default localized valid_type type serial_type nullable fk unique pk enum tags
-""",
-)
-LogicalTie = namedtuple("LogicalTie", "name valid_type fks")
-TableTieRelation = namedtuple("TableTieRelation", "name relation_name other")
-LogicalEnum = namedtuple(
-    "LogicalEnum", "name id_type valid_type coded localized values values_localized"
-)
-ForeignKey = namedtuple("ForeignKey", "table ref_id name")
-InverseForeignKey = namedtuple("InverseForeignKey", "table valid_type name")
-BlockElement = namedtuple("BlockElement", "value type")
-VirtualAttribute = namedtuple("VirtualAttribute", "name type")
+# LogicalTable = namedtuple(
+#     "LogicalTable",
+#     """
+# name localized id_type inverse_fks valid_type internal historized pk attributes all_columns
+# old_audit ties blocks field_blocks tags
+# backrefs
+# virtual_attributes
+# indexes
+# unique_indexes
+# """,
+# )
 
-SystemDefinition = namedtuple("SystemDefinition", "attributes aces global_aces")
+# LogicalColumn = namedtuple(
+#     "LogicalColumn",
+#     """
+# name db_name default localized valid_type type serial_type nullable fk unique pk enum tags
+# """,
+# )
+# LogicalTie = namedtuple("LogicalTie", "name valid_type fks")
+# TableTieRelation = namedtuple("TableTieRelation", "name relation_name other")
+# LogicalEnum = namedtuple(
+#     "LogicalEnum", "name id_type valid_type coded localized values values_localized"
+# )
+# ForeignKey = namedtuple("ForeignKey", "table ref_id name")
+# InverseForeignKey = namedtuple("InverseForeignKey", "table valid_type name")
+# BlockElement = namedtuple("BlockElement", "value type")
+# VirtualAttribute = namedtuple("VirtualAttribute", "name type")
+
+# SystemDefinition = namedtuple("SystemDefinition", "attributes aces global_aces")
 
 
 Tables = []
@@ -567,7 +437,9 @@ def parse_tags_block(tags):
 
 def m3_load_iter(it):
     for table, _cols in it:
-        print(table, _cols)
+        ic(table)
+        ic(_cols)
+
         m3_load(table, _cols)
 
 
@@ -688,7 +560,6 @@ def m3_load(table, _cols):
     # XXX: cheap hack since I can't be bothered to migrate to this properly yet in ddl/*.yaml*
     if "API" in _cols.get("TAGS", []) and "deleted" in cols:
         virtual_attributes.append(VirtualAttribute(name="valid", type="bool"))
-
     virtual_attributes = [
         LogicalColumn(
             name=attr.name,
@@ -839,66 +710,90 @@ def m3_load(table, _cols):
     assert len(pk) > 0 or table in Tags.NO_PK
     id_type = tuple(x.type for x in pk)
     assert table not in [t.name for t in Tables], table
-    Tables.append(
-        LogicalTable(
-            name=table,
-            id_type=id_type,
-            historized=table in Tags.HISTORIZED,
-            internal="INTERNAL" in table_tags,
-            valid_type=valid_type,
-            pk=pk,
-            inverse_fks=LazyInverseFKs(table),
-            attributes=_columns,
-            all_columns=list(chain(pk, _columns)),
-            localized=table_localized,
-            indexes=indexes,
-            unique_indexes=unique_indexes,
-            old_audit="{}_A".format(table_name(table, sim=False))
-            if table in Tags.HISTORIZED and table not in Tags.NO_AUDIT
-            else None,
-            ties=tie_relations,
-            blocks=blocks,
-            field_blocks=field_blocks,
-            tags=table_tags,
-            backrefs=backrefs,
-            virtual_attributes=virtual_attributes,
-        )
+    new_logical_table = LogicalTable(
+        name=table,
+        id_type=id_type,
+        historized=table in Tags.HISTORIZED,
+        internal="INTERNAL" in table_tags,
+        valid_type=valid_type,
+        pk=pk,
+        inverse_fks=LazyInverseFKs(table),
+        attributes=_columns,
+        all_columns=list(chain(pk, _columns)),
+        localized=table_localized,
+        indexes=indexes,
+        unique_indexes=unique_indexes,
+        old_audit="{}_A".format(table_name(table, sim=False))
+        if table in Tags.HISTORIZED and table not in Tags.NO_AUDIT
+        else None,
+        ties=tie_relations,
+        blocks=blocks,
+        field_blocks=field_blocks,
+        tags=table_tags,
+        backrefs=backrefs,
+        virtual_attributes=virtual_attributes,
     )
+    pformat(new_logical_table)
+    # set_trace()
+    print("asdasd")
+    # logical_table = LogicalTable(
+    #     name=table,
+    #     id_type=id_type,
+    #     historized=table in Tags.HISTORIZED,
+    #     internal="INTERNAL" in table_tags,
+    #     valid_type=valid_type,
+    #     pk=pk,
+    #     inverse_fks=LazyInverseFKs(table),
+    #     attributes=_columns,
+    #     all_columns=list(chain(pk, _columns)),
+    #     localized=table_localized,
+    #     indexes=indexes,
+    #     unique_indexes=unique_indexes,
+    #     old_audit="{}_A".format(table_name(table, sim=False))
+    #     if table in Tags.HISTORIZED and table not in Tags.NO_AUDIT
+    #     else None,
+    #     ties=tie_relations,
+    #     blocks=blocks,
+    #     field_blocks=field_blocks,
+    #     tags=table_tags,
+    #     backrefs=backrefs,
+    #     virtual_attributes=virtual_attributes,
+    # )
+    Tables.append(new_logical_table)
 
+    # def create_env(file_loader=True):
+    #     bcc = jinja2.FileSystemBytecodeCache(CACHE_DIR, "%s.cache")
+    #     env = jinja2.Environment(
+    #         loader=jinja2.ChoiceLoader(
+    #             [
+    #                 jinja2.FileSystemLoader("."),
+    #                 jinja2.FileSystemLoader(os.environ.get("DISEGEN_BASE", "disegen")),
+    #                 jinja2.FunctionLoader(lambda f: codecs.open(f, "r", "utf-8").read()),
+    #             ]
+    #         )
+    #         if file_loader
+    #         else jinja2.FunctionLoader(lambda x: x),
+    #         undefined=jinja2.StrictUndefined,
+    #         extensions=[
+    #             MySQLTriggerExtension,
+    #             MySQLSprocExtension,
+    #             MySQLFuncExtension,
+    #             "jinja2.ext.do",
+    #         ],
+    #         # Disable bytecode cache due to sporadic mysterious errors from custom
+    #         # extensions:
+    #         # bytecode_cache=bcc,
+    #     )
 
-def create_env(file_loader=True):
-    bcc = jinja2.FileSystemBytecodeCache(CACHE_DIR, "%s.cache")
-    env = jinja2.Environment(
-        loader=jinja2.ChoiceLoader(
-            [
-                jinja2.FileSystemLoader("."),
-                jinja2.FileSystemLoader(os.environ.get("DISEGEN_BASE", "disegen")),
-                jinja2.FunctionLoader(lambda f: codecs.open(f, "r", "utf-8").read()),
-            ]
-        )
-        if file_loader
-        else jinja2.FunctionLoader(lambda x: x),
-        undefined=jinja2.StrictUndefined,
-        extensions=[
-            MySQLTriggerExtension,
-            MySQLSprocExtension,
-            MySQLFuncExtension,
-            "jinja2.ext.do",
-        ],
-        # Disable bytecode cache due to sporadic mysterious errors from custom
-        # extensions:
-        # bytecode_cache=bcc,
-    )
+    #     def uniq(seq):
+    #         seen = set()
+    #         return [x for x in seq if x not in seen and not seen.add(x)]
 
-    def uniq(seq):
-        seen = set()
-        return [x for x in seq if x not in seen and not seen.add(x)]
-
-    env.filters["uniq"] = uniq
+    #     env.filters["uniq"] = uniq
 
     # load host env vars into jinja2 environment
     env.globals.update(get_host_env=lambda key: os.getenv(key))
-
+    ## logger.debug(env)
     return env
 
 
@@ -906,10 +801,11 @@ def load_defs(dir_, load_fn):
     files = sorted(os.listdir(dir_))
     PATH = ["{}/{}".format(dir_, x) for x in files if x.endswith(".yaml")]
     PATH_jinja2 = ["{}/{}".format(dir_, x) for x in files if x.endswith(".yaml.jinja2")]
-
+    ic(PATH)
+    ic(PATH_jinja2)
     for f in PATH:
         if os.environ.get("DEBUG"):
-            print("Processing file: {}".format(f), file=sys.stderr)
+            logger.debug("Processing file: {}".format(f), file=sys.stderr)
         d = codecs.open(f, "r", "utf-8")
         x = yaml_load(d)
         assert x, "File does not have any valid definitions: {}".format(f)
@@ -917,7 +813,7 @@ def load_defs(dir_, load_fn):
 
     for path in PATH_jinja2:
         if os.environ.get("DEBUG"):
-            print("Processing file: {}".format(path), file=sys.stderr)
+            logger.debug("Processing file: {}".format(path), file=sys.stderr)
         d = eval_template_text(codecs.open(path, "r", "utf-8").read(), path=path)
         load_fn(yaml_load(StringIO(d)).items())
 
@@ -971,61 +867,14 @@ def load_fields(f):
         yield table, get_column_blocks_ui(cols)
 
 
-def setup_globals():
-    # Remove overridden Enums:
-    Enums[:] = sorted(
-        (
-            x
-            for i, x in enumerate(Enums)
-            if i == max(j for j, z in enumerate(Enums) if x.name == z.name)
-        ),
-        key=lambda x: x.name,
-    )
-    # Remove overridden Tables:
-    Tables[:] = sorted(
-        (
-            x
-            for i, x in enumerate(Tables)
-            if i == max(j for j, z in enumerate(Tables) if x.name == z.name)
-        ),
-        key=lambda x: x.name,
-    )
-
-    global dTables, dEnums, dEnumCodes, dTies, dTableTies, dColumns, dColumnAliases
-    dTables = attrdict({table.name: table for table in Tables})
-    dEnums = attrdict({enum.name: enum for enum in Enums})
-    dEnumCodes = attrdict(
-        {enum.name: attrdict((v, k) for k, v in enum.values.items()) for enum in Enums}
-    )
-    dTies = attrdict({tie.name: tie for tie in Ties})
-    dTableTies = attrdict(
-        {table.name: frozenset(t.relation_name for t in table.ties) for table in Tables}
-    )
-    dColumns = attrdict(
-        {
-            table.name: attrdict({col.name: col for col in table.all_columns})
-            for table in Tables
-        }
-    )
-
-    # db_name aliases:
-    for table in Tables:
-        dColumns[table.name].update({col.db_name: col for col in table.all_columns})
-
-    # Hack for irregular naming:
-    # mdm_attributes['E_person'] = mdm_attributes['E_external_person']
-
-
 def sanity_checks():
     # Some sanity checks before printing anything:
     for table in Tables:
         for col in table.all_columns:
             if col.enum:
                 # assert col.enum in dEnums, col.enum
-                if not col.enum in dEnums:
-                    print(
-                        "Missing enum:", table.name, col.name, col.enum, file=sys.stderr
-                    )
+                if col.enum not in dEnums:
+                    ic("Missing enum:", table.name, col.name, col.enum, file=sys.stderr)
 
     for table in Tables:
         for col in table.pk:
@@ -1044,7 +893,11 @@ def sanity_checks():
 
 
 def main(
-    argv=[],
+    # argv=[
+    #     ""
+    # ],
+    input_dirs=["chalicelib/static"],
+    input_templates=["chalicelib/templates/models.py.jinja2"],
     kwarg={},
 ):
     """
@@ -1053,17 +906,17 @@ def main(
     - load fields.yaml , this is listed fields to be showed based on customer
     - load enum and ddl then load definitions with load_defs(path , m3_load_iter )
     """
-    print(mdm_csv_path)
-    for line in codecs.open(mdm_csv_path, "r", "utf-8").read().splitlines():
-        table, attr = line.split(",", 1)
-        # print( table, attr)
-        if not table in mdm_attributes:
-            mdm_attributes[table] = []
-        mdm_attributes[table].append(attr)
+    # for line in codecs.open(mdm_csv_path, "r", "utf-8").read().splitlines():
+    #     table, attr = line.split(",", 1)
+    #     # ## logger.debug( table, attr)
+    #     if not table in mdm_attributes:
+    #         mdm_attributes[table] = []
+    #     mdm_attributes[table].append(attr)
 
-    input_dirs = argv[0 : argv.index("--")] if "--" in argv else "static"
-    input_templates = argv[argv.index("--") + 1 :] if "--" in argv else []
-    print(input_dirs, input_templates)
+    # input_dirs = argv[0 : argv.index("--")] if "--" in argv else "chalicelib/modeler/static"
+    # input_templates = argv[argv.index("--") + 1 :] if "--" in argv else []
+    ## logger.debug(input_dirs)
+    ## logger.debug(input_templates)
     # Load ddl/, fields.yaml
     for dir_ in input_dirs:
         fields_yaml = os.path.join(dir_, "fields.yaml")
@@ -1075,7 +928,7 @@ def main(
             path = os.path.join(dir_, x)
             if not os.path.exists(path):
                 continue
-            print(path)
+            ## logger.debug(path)
             load_defs(path, m3_load_iter)
 
     assert Tables, "No table definitions loaded"
@@ -1105,14 +958,15 @@ def main(
     for path in input_templates:
         paths = path.split("=", 1)
         path_in, path_out = paths if paths[1:] else (path, None)
+        path_out = "test.py"
         if os.environ.get("DEBUG"):
-            print("Evaluating template: {}".format(path_in), file=sys.stderr)
+            logger.debug("Evaluating template: {}".format(path_in), file=sys.stderr)
 
         out = re_lines.sub("\n", re_trailing_space.sub("", eval_template(path_in)))
-        print(out)
+        ic(path_out)
         if path_out:
             with codecs.open(path_out, "wb", "utf-8") as fh:
-                print(out, file=fh)
+                logger.debug(out, file=fh)
         else:
             stdout += out
             res += out
@@ -1121,8 +975,8 @@ def main(
     return res
 
 
-env = create_env()
-env_text = create_env(file_loader=False)
+env = EnvLoader.create_env()
+env_text = EnvLoader.create_env(file_loader=False)
 
 if __name__ == "__main__":
     """
@@ -1131,4 +985,5 @@ if __name__ == "__main__":
     - input_templates: templates
     2. Output : text
     """
-    main(sys.argv)
+    logger.info(sys.argv)
+    # main(sys.argv)

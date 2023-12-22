@@ -28,3 +28,7 @@ def generate_otp():
 
 def to_snake_key(char: str) -> str:
     return char.replace(" ", "_").lower()
+
+
+def get_pnl_in_string(pnl: float):
+    return (f"{pnl:,.2%}",)
