@@ -1,7 +1,6 @@
 import os
+from dataclasses import dataclass
 from typing import Optional
-
-from pydantic import BaseModel, validator
 
 PARRENT_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "static")
 
@@ -19,23 +18,21 @@ def _get_email_template_path(template_name: str) -> str:
     )
 
 
-class EmailTemplate(BaseModel):
+@dataclass
+class EmailTemplate:
     template_name: str
     subject_part: str
 
     # the properties below are optional
-    html_part: Optional[str]
-    text_part: Optional[str]
+    html_part: Optional[str] = ""
+    text_part: Optional[str] = ""
 
-    @validator("html_part", each_item=True)
-    def fetch_html_part(cls, v, values):
-        template_name = values.get("template_name")
-        if v:
-            return v
+    def __post_init__(self):
+        template_name = self.template_name
         template_path = _get_email_template_path(template_name)
         with open(template_path, "r", encoding="utf-8") as f:
             text = f.read()
-        return text
+        self.html_part = text
 
 
 NEW_OTP_TEMPLATE = EmailTemplate(

@@ -3,17 +3,14 @@ import random
 from chalice import Blueprint
 from chalice.app import Cron, Rate
 from chalicelib.config import settings
+from chalicelib.controller.wallet import binance_controller
 from chalicelib.db.session import SessionLocal
 from chalicelib.enums import EmailType
 from chalicelib.logger_app import logger
 from chalicelib.services.email_render import get_email_template
 from chalicelib.services.email_sender import send_email
 from chalicelib.services.github_service import update_file
-from chalicelib.services.porfolio import (
-    get_funding_overview,
-    get_token_price,
-    update_bnb_p2p_records,
-)
+from chalicelib.services.porfolio import update_bnb_p2p_records
 
 cronjob_bp = Blueprint(__name__)
 
@@ -43,9 +40,9 @@ def auto_commit_cron(event):
         logger.info("No commit !")
 
 
-@cronjob_bp.schedule(Cron(27, "2,14,22", "?", "*", "*", "*"))
+@cronjob_bp.schedule(Cron(7, "2,7,22", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
-    response = get_funding_overview()
+    response = binance_controller.get_funding_overview()
     template_name = get_email_template(EmailType.PORFOLIO_OVERVIEW.value)
 
     send_email(
