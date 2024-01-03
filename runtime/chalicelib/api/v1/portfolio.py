@@ -20,8 +20,6 @@ def get_summary():
 
 @porfolio_bp.route("/trigger-update", methods=["GET"])
 def trigger_update():
-    # his_res = binance_controller.update_p2p_history_records()
-
     porfolio_controller.update_p2p_records()
     return "ok"
 
@@ -38,14 +36,6 @@ def get_funding_overview_route():
         message_payload=response,
     )
     return response
-
-
-@porfolio_bp.route("/price/{token_pair}")
-def get_funding_records(token_pair):
-    token_pairs = []
-    if not token_pair:
-        token_pairs = ["BTCUSDT", "LINKUSDT"]
-    return get_token_price([token_pair.upper()])[0].get("price")
 
 
 @porfolio_bp.route("/p2p-pricing")

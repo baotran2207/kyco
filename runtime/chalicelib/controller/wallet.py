@@ -1,15 +1,11 @@
-import datetime
 import itertools
 from dataclasses import dataclass
 
-import requests
-from chalicelib import utils
 from chalicelib.db.session import SessionLocal
 from chalicelib.models.porfolio import DepositRecords
 from chalicelib.schemas.binance import AssetsOverView, BinanceP2PRecord, P2PRecord
 from chalicelib.schemas.deposit import DepositOverview
 from chalicelib.services.binance_api import BinanceExchange, bnb_ex
-from icecream import ic
 from loguru import logger
 from sqlalchemy.sql import functions
 
@@ -171,7 +167,9 @@ class BinanceController(WalletController):
             order_db = DepositRecords()
             db.add(order_db)
             logger.info(
-                f"Adding p2p new order to db {order_db.order_number} - created time {order_db.created_time}"
+                "Adding p2p new order to db "
+                + f"{order_db.order_number} - created time "
+                + f"{order_db.created_time}"
             )
 
             added_order_numbers.append(

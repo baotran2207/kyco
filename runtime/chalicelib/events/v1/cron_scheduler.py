@@ -6,11 +6,11 @@ from chalicelib.config import settings
 from chalicelib.controller.wallet import binance_controller
 from chalicelib.db.session import SessionLocal
 from chalicelib.enums import EmailType
-from chalicelib.logger_app import logger
 from chalicelib.services.email_render import get_email_template
 from chalicelib.services.email_sender import send_email
 from chalicelib.services.github_service import update_file
 from chalicelib.services.porfolio import update_bnb_p2p_records
+from loguru import logger
 
 cronjob_bp = Blueprint(__name__)
 
@@ -27,6 +27,7 @@ def warm_up_db_everyday(event):
     logger.info("Warm up Superbase database !")
     db = SessionLocal()
     a = db.execute("SELECT 1")
+    logger.info(a)
     return "This should be invoked every weekday at 6pm"
 
 
