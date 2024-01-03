@@ -4,6 +4,7 @@ from chalicelib.api.v1.auth import auth_routes
 from chalicelib.api.v1.dev import unname_bp
 from chalicelib.api.v1.portfolio import porfolio_bp
 from chalicelib.api.v1.users import users_blueprints
+from chalicelib.api.v1.webhooks import webhooks_routes
 from chalicelib.config import settings
 from chalicelib.events.v1.cognito_events import *
 from chalicelib.events.v1.cron_scheduler import *
@@ -80,6 +81,7 @@ def init_blueprint(app: Chalice):
     app.register_blueprint(health_routes)
     app.register_blueprint(auth_routes, url_prefix="/auth")
     app.register_blueprint(users_blueprints)
+    app.register_blueprint(webhooks_routes, url_prefix="/webhooks")
 
     app.register_blueprint(porfolio_bp, url_prefix="/porfolio")
     if settings.ENV == "dev":

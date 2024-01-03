@@ -86,7 +86,7 @@ class BinanceController(WalletController):
 
         return DepositOverview(**res)
 
-    def get_funding_overview(self):
+    def get_funding_overview(self) -> dict:
         current_assets = self.get_saving_accounts_overview()
         current_usd_price = self.binance_exchange.get_p2p_pricing()
         deposits = self.get_deposit_overview()

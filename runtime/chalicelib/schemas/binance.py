@@ -143,8 +143,11 @@ class AssetsOverView(BaseModel):
     major_asset: Asset = None
 
     def model_post_init(self, ctx):
-        self.stables_amount = sum(
-            [asset.total_amount for asset in self.assets if asset.is_stables_asset]
+        self.stables_amount = round(
+            sum(
+                [asset.total_amount for asset in self.assets if asset.is_stables_asset]
+            ),
+            2,
         )
         self.stables_amount_vnd = round(self.stables_amount * self.current_usd_price)
         self.current_assets_usd = sum([asset.value_in_usd for asset in self.assets])
