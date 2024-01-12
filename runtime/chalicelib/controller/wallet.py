@@ -183,5 +183,20 @@ class BinanceController(WalletController):
         return added_order_numbers
 
 
+@dataclass
+class EthScanController(WalletController):
+    def get_wallet_name(self) -> str:
+        return "ETHSCAN"
+
+    def get_deposits_overview(self) -> DepositOverview:
+        NotImplemented
+
+    def get_all_assets(self):
+        NotImplemented
+
+    def get_asset(self, asset_name):
+        NotImplemented
+
+
 binance_controller = BinanceController(bnb_ex)
 logger.info(f"init binance_controller: {binance_controller}")

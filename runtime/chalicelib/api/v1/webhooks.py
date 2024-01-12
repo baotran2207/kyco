@@ -23,7 +23,7 @@ class TelegramResponsePayload(BaseModel):
 url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
 
 
-@webhooks_routes.route("/telegram", methods=["GET", "POST"])
+@webhooks_routes.route("/telegram", methods=["POST"])
 def telegram_bot():
     """
     Telegram bot webhook
@@ -31,15 +31,13 @@ def telegram_bot():
 
     """
     params = webhooks_routes.current_app.current_request.json_body
-    request_body = RequestBody(**params)
-    request_message = request_body.message
-    if webhooks_routes.current_app.current_request.method == "GET":
-        return request_body
+    logger.info(f"Telegram received new message: {params}")
 
     telegram_bot_controller = TelegramBotController()
 
     telegram_bot_controller.reply(
-        chat_id=request_message.chat.id, origin_text=request_message.text
+        chat_id=params["message"]["chat"]["id"],
+        origin_text=params["message"]["text"],
     )
 
     return 200

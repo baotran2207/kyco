@@ -3,6 +3,7 @@ import random
 from chalice import Blueprint
 from chalice.app import Cron, Rate
 from chalicelib.config import settings
+from chalicelib.controller.telegram_bot import TelegramBotController
 from chalicelib.controller.wallet import binance_controller
 from chalicelib.db.session import SessionLocal
 from chalicelib.enums import EmailType
@@ -41,7 +42,7 @@ def auto_commit_cron(event):
         logger.info("No commit !")
 
 
-@cronjob_bp.schedule(Cron(7, "2,7,22", "?", "*", "*", "*"))
+@cronjob_bp.schedule(Cron(7, "23,", "?", "*", "*", "*"))
 def auto_send_porfolio_summary(event):
     response = binance_controller.get_funding_overview()
     template_name = get_email_template(EmailType.PORFOLIO_OVERVIEW.value)
@@ -53,3 +54,19 @@ def auto_send_porfolio_summary(event):
         message_payload=response,
     )
     logger.info("Sent funding overview !")
+
+
+@cronjob_bp.schedule(Cron(0, "5", "?", "*", "*", "*"))
+def auto_send_porfolio_summary_telegram(event):
+    telegram_bot_controller = TelegramBotController()
+    chat_id = 5256531196
+    origin_text = "/portfolio_dashboard"
+    telegram_bot_controller.reply(
+        chat_id=chat_id,
+        origin_text=origin_text,
+    )
+
+    reply_message = telegram_bot_controller.get_reply_message(origin_text)
+    telegram_bot_controller.send_message(chat_id, reply_message)
+
+    logger.info("Sent deposit overview to telegram !")

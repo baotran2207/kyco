@@ -86,11 +86,11 @@ class TelegramBotController:
 
     def get_reply_message(self, origin_text: str) -> str:
         if not self.is_command(origin_text):
-            return "Not Support command yet"
+            return help_message
 
         command = origin_text.split(" ")[0].replace("/", "")
         if command not in REPLY_MESSAGE_HANDLERS:
-            return "Not Support command yet"
+            return help_message
         handler = REPLY_MESSAGE_HANDLERS.get(command)
         return handler.render()
 
