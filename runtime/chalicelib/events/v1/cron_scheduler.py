@@ -65,8 +65,4 @@ def auto_send_porfolio_summary_telegram(event):
         chat_id=chat_id,
         origin_text=origin_text,
     )
-
-    reply_message = telegram_bot_controller.get_reply_message(origin_text)
-    telegram_bot_controller.send_message(chat_id, reply_message)
-
     logger.info("Sent deposit overview to telegram !")
